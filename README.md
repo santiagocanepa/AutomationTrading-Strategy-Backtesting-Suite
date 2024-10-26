@@ -147,7 +147,7 @@ AutomationTrading-Strategy-Backtesting-Suite/
    - Consulta CONTRIBUTING.md para más detalles.
 
 ### 📄 Licencia
-Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo LICENSE para más información.
+Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo [LICENSE](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/LICENSE) para más información.
 
 ### 📞 Contacto
    - **Santiago Canepa**

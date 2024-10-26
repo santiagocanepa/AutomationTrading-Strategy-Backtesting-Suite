@@ -20,7 +20,7 @@ El proyecto está organizado en tres componentes principales, cada uno con su pr
 ```plaintext
 AutomationTrading-Strategy-Backtesting-Suite/
 ├── GenerateCombinationPython/
-│   └── [README.md](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Generate%20Combination%20Python/ReadmePythonCombinationES.md)
+│   └── README.md
 │   └── Generate Combination Python/
 │   └── GenerateCombination.ipynb
 │   └── AddComillasJSONFinal.py
@@ -33,7 +33,7 @@ AutomationTrading-Strategy-Backtesting-Suite/
 │   └── requirements.txt
 │
 ├── PuppeteerAutomationBacktesting/
-│   └── [README.md](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Puppetier%20Automation%20Backtesting/ReadmePuppetierES.md)
+│   └── README.md
 │   └──constants/
 │       ├── options.ts
 │       ├── selectors.ts
@@ -65,7 +65,7 @@ AutomationTrading-Strategy-Backtesting-Suite/
 │       └── tsconfig.json
 │
 ├── TradingViewStrategy/
-│   └── [README.md](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Indicator%20Strategy%20of%20TradingView/ReadmeIndicatorsES.md)
+│   └── README.md
 │   └── Strategy-Indicators.pinescript
 ├── .gitignore
 ├── LICENSE

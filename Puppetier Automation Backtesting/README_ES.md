@@ -1,9 +1,9 @@
 # Puppeteer Automation Backtesting 🚀
 
 
-![image](https://github.com/user-attachments/assets/018378fe-5e00-4ce6-8db6-3b21f3773ec4)
+![image](https://github.com/user-attachments/assets/2dd94083-ca7d-4e98-a233-d7fcc14dea9f)
 
-![image](https://github.com/user-attachments/assets/18c92a2f-a151-42a3-8922-afd133b55574)
+![image](https://github.com/user-attachments/assets/8716460b-608a-4b2e-9e75-ecd1ec58e629)
 
 
 Este directorio contiene el script de **Puppeteer** diseñado para realizar **backtesting automatizado** de estrategias de trading en **TradingView**. A continuación, se detalla la estructura del proyecto, la funcionalidad de cada carpeta y archivo clave, así como una explicación detallada del flujo de trabajo del script.

@@ -20,7 +20,7 @@ El proyecto está organizado en tres componentes principales, cada uno con su pr
 ```plaintext
 AutomationTrading-Strategy-Backtesting-Suite/
 ├── GenerateCombinationPython/
-│   └── [README específico](./GenerateCombinationPython/README.md)
+│   └── [README.md](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Generate%20Combination%20Python/ReadmePythonCombinationES.md)
 │   └── Generate Combination Python/
 │   └── GenerateCombination.ipynb
 │   └── AddComillasJSONFinal.py
@@ -33,7 +33,7 @@ AutomationTrading-Strategy-Backtesting-Suite/
 │   └── requirements.txt
 │
 ├── PuppeteerAutomationBacktesting/
-│   └── [README específico](./PuppeteerAutomationBacktesting/README.md)
+│   └── [README.md](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Puppetier%20Automation%20Backtesting/ReadmePuppetierES.md)
 │   └──constants/
 │       ├── options.ts
 │       ├── selectors.ts
@@ -65,7 +65,7 @@ AutomationTrading-Strategy-Backtesting-Suite/
 │       └── tsconfig.json
 │
 ├── TradingViewStrategy/
-│   └── [README específico](./TradingViewStrategy/README.md)
+│   └── [README.md](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Indicator%20Strategy%20of%20TradingView/ReadmeIndicatorsES.md)
 │   └── Strategy-Indicators.pinescript
 ├── .gitignore
 ├── LICENSE
@@ -73,9 +73,9 @@ AutomationTrading-Strategy-Backtesting-Suite/
 ```
 
    - **🔗 Enlaces Rápidos**
-       - Generación y Análisis de Combinaciones (Python)
-       - Backtesting Automatizado (Puppeteer)
-       - Estrategia de TradingView
+       - [Generación y Análisis de Combinaciones (Python)](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Generate%20Combination%20Python/ReadmePythonCombinationES.md)
+       - [Backtesting Automatizado (Puppeteer)](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Puppetier%20Automation%20Backtesting/ReadmePuppetierES.md)
+       - [Estrategia de TradingView](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Indicator%20Strategy%20of%20TradingView/ReadmeIndicatorsES.md)
 
    - **🔧 Integración de Componentes**
        1. Estrategia de TradingView
@@ -132,7 +132,10 @@ AutomationTrading-Strategy-Backtesting-Suite/
        - Una vez completado el backtesting, utiliza las herramientas de análisis de Python para evaluar la eficacia de las combinaciones. Consulta el notebook y scripts de análisis en GenerateCombinationPython/README.md.
 
 ### 📊 Visualizaciones
-Imagen
+![image](https://github.com/user-attachments/assets/f16f1dee-80c6-46ed-85c5-56d6484a9728)
+![image](https://github.com/user-attachments/assets/8931ad4c-c0ac-4f7c-af9f-e73682ca1efb)
+![image](https://github.com/user-attachments/assets/f42b43fe-efc5-4a93-adb9-99e7c976ed7a)
+![image](https://github.com/user-attachments/assets/7dcef661-932b-4e2b-8529-2f0a2d3e16c0)
 
 ### 🧑‍💻 Contribución
 ¡Las contribuciones son bienvenidas! Si deseas colaborar, por favor sigue estos pasos:

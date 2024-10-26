@@ -1,9 +1,9 @@
 
 ### 📊 Visualizaciones
-![image](https://github.com/user-attachments/assets/f16f1dee-80c6-46ed-85c5-56d6484a9728)
-![image](https://github.com/user-attachments/assets/8931ad4c-c0ac-4f7c-af9f-e73682ca1efb)
-![image](https://github.com/user-attachments/assets/f42b43fe-efc5-4a93-adb9-99e7c976ed7a)
-![image](https://github.com/user-attachments/assets/7dcef661-932b-4e2b-8529-2f0a2d3e16c0)
+![image](https://github.com/user-attachments/assets/b010edf3-5c6f-4c78-9410-bbe50daf1c42)
+![image](https://github.com/user-attachments/assets/2a7682c4-7e62-4de4-95bf-d6b171b061d0)
+![image](https://github.com/user-attachments/assets/8a423216-0c8e-4e37-86bb-aacafb8d35f3)
+![image](https://github.com/user-attachments/assets/39c03c50-b0b7-42fb-b6ed-0861bab68386)
 
 ### 📈 Descripción
 Este proyecto integral de trading automatizado combina estrategias avanzadas de TradingView con scripts de Python para la generación y análisis de combinaciones de indicadores, y utiliza Puppeteer para realizar backtesting automatizado. La arquitectura modular permite una personalización extensa y una optimización eficiente de estrategias, facilitando la identificación de configuraciones rentables y la gestión de riesgos.

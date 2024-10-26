@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/7dcef661-932b-4e2b-8529-2f0a2d3e16c0)
+![image](https://github.com/user-attachments/assets/bf8944bd-6468-4293-92bb-e9bd2cb4d225)
 
 # Combination Generation and Analysis for Backtesting
 
@@ -187,7 +187,7 @@ Generate Combination Python/
 
   - Use net profit as the main metric. Although this is not usually relevant, and what matters most is the profit factor and the number of trades made, in this particular case, given that all strategies were tested with the same initial capital, the Net Profit variable synthesizes well the combination of these two. Analyze the effectiveness of each indicator when it appears in optional mode, in order to isolate its impact. Introduce the entropy of each combination to consider the interdependence between indicators.
 
-  - ![image](https://github.com/user-attachments/assets/57577ab5-040c-4f06-8053-88619af3302c)
+    - ![image](https://github.com/user-attachments/assets/2f6711e3-a6f9-4e9c-83f8-1f6fae044e47)
 
 - **Steps**
 

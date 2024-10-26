@@ -1,0 +1,6 @@
+pandas
+numpy
+Flask
+pyperclip
+python-dotenv
+

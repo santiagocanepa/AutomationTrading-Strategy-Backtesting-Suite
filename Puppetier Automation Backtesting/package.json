@@ -1,0 +1,33 @@
+{
+  "name": "instabot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "preinit": "tsc -p tsconfig.json",
+    "init": "node ./dist/functions/index.js"
+  },
+  "keywords": [],
+  "author": "Sebastian",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/form-data": "^2.2.1",
+    "@typescript-eslint/eslint-plugin": "^7.13.1",
+    "@typescript-eslint/parser": "^7.13.1",
+    "dotenv": "^16.4.5",
+    "eslint": "^8.56.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-n": "^16.0.0",
+    "eslint-plugin-promise": "^6.2.0",
+    "typescript": "^5.5.2"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "form-data": "^4.0.0",
+    "node-fetch": "^3.3.2",
+    "puppeteer": "22.12.0"
+  }
+}

@@ -1,0 +1,1285 @@
+//@version=5
+strategy('SuperStrategy2 by Santiicanepa', overlay=true, max_bars_back=4999)
+
+/// Configuración de Condiciones
+profit_take_percent = input.int(50, title='Porcentaje de toma de ganancias', minval=0, maxval=100, group='Gestiòn de riesgo')
+breakeven_buffer = input.float(1.007, title='Comisión para calcular breakeven', minval=1.0, group='Gestiòn de riesgo')
+Multiplier_profit = input.float(2.0, title='Multiplier for Take Profit', step=0.1, group='Gestiòn de riesgo')
+// Input para definir cuántos indicadores opcionales deben cumplirse
+num_opcionales_necesarias = input.int(1, title='Número de Indicadores Opcionales requeridos', minval=0, group='Gestiòn de riesgo')
+// Agrupar los inputs en la misma línea con la opción 'inline'
+group_name = 'Configuración de Indicadores'
+// Absolute Strength
+enable_absolute_strength_lines = input.bool(true, title='Activar Absolute Strength', group=group_name)
+ind_absolute_strength_lines = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='absolute_strength', group=group_name)
+// Absolute Strength Histogram
+enable_absolute_strength_histogram = input.bool(true, title='Activar Absolute Strength (Histograma)', group=group_name)
+ind_absolute_strength_histogram = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='absolute_strength_histogram', group=group_name)
+// SSL Channel
+enable_ssl_channel = input.bool(true, title='Activar SSL Channel', group=group_name)
+ind_ssl_channel = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='ssl_channel', group=group_name)
+// RSI
+enable_rsi = input.bool(true, title='Activar RSI', group=group_name)
+ind_rsi = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='rsi', group=group_name)
+// Squeeze Momentum
+enable_squeeze_momentum = input.bool(true, title='Activar Squeeze Momentum', group=group_name)
+ind_squeeze_momentum = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='squeeze_momentum', group=group_name)
+// MACD Signal
+enable_macdSignal = input.bool(true, title='Activar MACD Signal', group=group_name)
+ind_macdSignal = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='macd_signal', group=group_name)
+// MACD Histogram
+enable_macdHist = input.bool(true, title='Activar MACD Histograma', group=group_name)
+ind_macdHist = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='macd_hist', group=group_name)
+// EMA Conditions
+enable_ema_conditions = input.bool(true, title='Activar Condiciones EMAs', group=group_name)
+ind_ema_conditions = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='ema_conditions', group=group_name)
+// MTF Conditions
+enable_mtf_conditions = input.bool(true, title='Activar Condiciones MTF', group=group_name)
+ind_mtf_conditions = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='mtf_conditions', group=group_name)
+// Distance EMAs
+enable_distancia_emas = input.bool(true, title='Activar Distancia entre EMAs', group=group_name)
+ind_distancia_emas = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='distancia_emas', group=group_name)
+// Distance SSL
+enable_distancia_stop = input.bool(true, title='Activar Distancia Valida StopLoss', group=group_name)
+ind_distancia_stop = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='distancia_stop', group=group_name)
+// Firestorm
+enable_firestorm = input.bool(true, title='Usar Firestorm', group=group_name)
+ind_firestorm = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='firestorm', group=group_name)
+// Divergences
+enable_divergence = input.bool(true, title='Activar Divergencia', group=group_name)
+ind_divergence = input.string('Opcional', title='Estado', options=['Excluyente', 'Opcional', 'Desactivado'], inline='divergence', group=group_name)
+// Cypher WT
+enable_wt_reversal = input.bool(true, title="Activar WaveTrend Reversal", group=group_name)
+ind_wt_reversal = input.string('Opcional', title="Estado", options=['Excluyente', 'Opcional', 'Desactivado'], inline='WaveTrend', group=group_name)
+enable_wt_divergence = input.bool(true, title="Activar WaveTrend Divergence", group=group_name)
+ind_wt_divergence = input.string('Opcional', title="Estado", options=['Excluyente', 'Opcional', 'Desactivado'], inline='WaveTrend1', group=group_name)
+
+
+
+// Entradas del indicador Firestorm
+Periods = input(title='Firestorm Period', defval=10, group='Parametros Firestorm')
+src = input(hl2, title='Source Firestorm', group='Parametros Firestorm')
+Multiplier_atr = input.float(3.0, title='ATR Multiplier', step=0.1, group='Parametros Firestorm')
+showsignals = false
+highlighting = false
+atr = ta.sma(ta.tr, Periods)
+// Inicialización y cálculo del indicador Firestorm
+var int trend = na
+var bool last_firestorm_buy_signal = na
+var bool last_firestorm_sell_signal = na
+// Cálculo de las líneas de tendencia Firestorm
+up = src - Multiplier_atr * atr
+up1 = nz(up[1], up)
+up := close[1] > up1 ? math.max(up, up1) : up
+dn = src + Multiplier_atr * atr
+dn1 = nz(dn[1], dn)
+dn := close[1] < dn1 ? math.min(dn, dn1) : dn
+// Inicialización y actualización de la variable `trend`
+trend := na(trend[1]) ? 1 : trend
+trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+// Actualización de las señales de compra y venta
+if trend == 1 and trend[1] == -1
+    last_firestorm_buy_signal := true
+    last_firestorm_sell_signal := false
+    last_firestorm_sell_signal
+else if trend == -1 and trend[1] == 1
+    last_firestorm_buy_signal := false
+    last_firestorm_sell_signal := true
+    last_firestorm_sell_signal
+// Asignar la última señal a las variables de señal
+firestorm_buy_signal = last_firestorm_buy_signal
+firestorm_sell_signal = last_firestorm_sell_signal
+// Plots para las líneas de tendencia (siempre visibles)
+upPlot = plot(up, title='Up Trend', style=plot.style_line, linewidth=1, color=color.new(color.green, 0))
+dnPlot = plot(dn, title='Down Trend', style=plot.style_line, linewidth=1, color=color.new(color.red, 0))
+
+
+
+///Absolute STRONGER
+// Cálculos del indicador Absolute Strength Histogram
+Price1 = ta.sma(close, 1)
+Price2 = ta.sma(close[1], 1)
+// RSI
+Bulls0 = 0.5 * (math.abs(Price1 - Price2) + Price1 - Price2)
+Bears0 = 0.5 * (math.abs(Price1 - Price2) - (Price1 - Price2))
+// STOCHASTIC
+Length = 9
+Bulls1 = Price1 - ta.lowest(Price1, Length)
+Bears1 = ta.highest(Price1, Length) - Price1
+// ADX
+Bulls2 = 0.5 * (math.abs(high - high[1]) + high - high[1])
+Bears2 = 0.5 * (math.abs(low[1] - low) + low[1] - low)
+Bulls = Bulls0
+Bears = Bears0
+AvgBulls = ta.sma(Bulls, Length)
+AvgBears = ta.sma(Bears, Length)
+SmthBulls = ta.sma(AvgBulls, 3)
+SmthBears = ta.sma(AvgBears, 3)
+difference = math.abs(SmthBulls - SmthBears)
+// Colores ajustados para las líneas
+bull_trend_color = SmthBulls > SmthBulls[1] ? color.green : color.lime
+bear_trend_color = SmthBears < SmthBears[1] ? color.orange : color.red
+// Condiciones para las líneas
+bull_lines_condition = enable_absolute_strength_lines and (bull_trend_color == color.lime or bull_trend_color == color.green)
+bear_lines_condition = enable_absolute_strength_lines and (bear_trend_color == color.orange or bear_trend_color == color.red)
+// Condiciones para el histograma
+histogram_color = difference > SmthBulls ? SmthBears < SmthBears[1] ? color.orange : color.red : difference > SmthBears ? SmthBulls < SmthBulls[1] ? color.lime : color.green : color.gray
+bull_histogram_condition = enable_absolute_strength_histogram and (histogram_color == color.lime or histogram_color == color.green)
+bear_histogram_condition = enable_absolute_strength_histogram and (histogram_color == color.orange or histogram_color == color.red)
+// Visualización de las líneas y el histograma en el gráfico
+
+// EMAs, SSL Channel y MTF
+ema_1200 = ta.ema(close, 1200)
+ema_200 = ta.ema(close, 200)
+ema_600 = ta.ema(close, 600)
+// Visualización de las EMAs
+plot(ema_1200, color=color.new(color.blue, 0), linewidth=3, title='EMA 1200')
+plot(ema_200, color=color.new(color.purple, 0), linewidth=1, title='EMA 200')
+plot(ema_600, color=color.new(color.red, 0), linewidth=2, title='EMA 600')
+// Condiciones de las EMAs
+por_encima_de_emas = close > ema_200
+por_debajo_de_emas = close < ema_200
+// Parámetros del SSL Channel
+ssl_length = input(21, title='Period SSL', group='Parametros SSL')
+smaHigh = ta.sma(high, ssl_length)
+smaLow = ta.sma(low, ssl_length)
+// Cálculo del SSL Channel
+var float Hlv = na
+Hlv := na(Hlv[1]) ? 0 : close > smaHigh ? 1 : close < smaLow ? -1 : Hlv[1]
+sslDown = Hlv < 0 ? smaHigh : smaLow
+sslUp = Hlv < 0 ? smaLow : smaHigh
+// Condiciones del SSL Channel
+ssl_compra = sslUp > sslDown
+ssl_venta = sslUp < sslDown
+// Condiciones del SSL Channel
+//ssl_compra = crossover(sslUp, sslDown)
+//ssl_venta = crossunder(sslUp, sslDown)
+
+// Visualización SSL Channel
+plot(sslDown, color=color.new(color.red, 0), title='SSL Down')
+plot(sslUp, color=color.new(color.green, 0), title='SSL Up')
+
+
+
+// Nueva condición de distancia entre el precio y SSL
+distancia_ssl = (math.abs(sslUp - sslDown) / sslUp)  // Distancia relativa entre sslUp y sslDown
+
+// Condiciones para Stop Loss no demasiado holgado
+distancia_stop_compra = (math.abs(close - up) / up) <= distancia_ssl
+distancia_stop_venta = (math.abs(close - dn) / dn) <= distancia_ssl
+
+distancia_emas_valida = distancia_ssl <= (math.abs(ema_200 - ema_600) / ema_200)
+
+
+
+
+// Grupo de configuración para las MTFs
+mtf_group = 'Configuración de MTFs'
+
+// 1. Inputs para las 5 MTFs
+// MTF1
+mtf1_enabled = input.bool(true, title='Habilitar MTF1', group=mtf_group)
+mtf1_length = input.int(20, title='Longitud MTF1', minval=1, group=mtf_group)
+mtf1_timeframe = input.timeframe('60', title='Timeframe MTF1', group=mtf_group)
+
+// MTF2
+mtf2_enabled = input.bool(true, title='Habilitar MTF2', group=mtf_group)
+mtf2_length = input.int(20, title='Longitud MTF2', minval=1, group=mtf_group)
+mtf2_timeframe = input.timeframe('240', title='Timeframe MTF2', group=mtf_group)
+
+// MTF3
+mtf3_enabled = input.bool(true, title='Habilitar MTF3', group=mtf_group)
+mtf3_length = input.int(200, title='Longitud MTF3', minval=1, group=mtf_group)
+mtf3_timeframe = input.timeframe('240', title='Timeframe MTF3', group=mtf_group)
+
+// MTF4
+mtf4_enabled = input.bool(true, title='Habilitar MTF4', group=mtf_group)
+mtf4_length = input.int(20, title='Longitud MTF4', minval=1, group=mtf_group)
+mtf4_timeframe = input.timeframe('D', title='Timeframe MTF4', group=mtf_group)
+
+// MTF5
+mtf5_enabled = input.bool(true, title='Habilitar MTF5', group=mtf_group)
+mtf5_length = input.int(200, title='Longitud MTF5', minval=1, group=mtf_group)
+mtf5_timeframe = input.timeframe('D', title='Timeframe MTF5', group=mtf_group)
+
+// 2. Nueva configuración para el modo de condición MTF
+mtf_condition_mode = input.string(    title = "Modo de Condición MTF",    defval = "Excluyentes",    options = ["Excluyentes", "Opcionales"],    group = mtf_group)
+
+// 3. Cálculo de las MTFs
+mtf1 = mtf1_enabled ? request.security(syminfo.tickerid, mtf1_timeframe, ta.sma(close, mtf1_length)) : na
+mtf2 = mtf2_enabled ? request.security(syminfo.tickerid, mtf2_timeframe, ta.sma(close, mtf2_length)) : na
+mtf3 = mtf3_enabled ? request.security(syminfo.tickerid, mtf3_timeframe, ta.sma(close, mtf3_length)) : na
+mtf4 = mtf4_enabled ? request.security(syminfo.tickerid, mtf4_timeframe, ta.sma(close, mtf4_length)) : na
+mtf5 = mtf5_enabled ? request.security(syminfo.tickerid, mtf5_timeframe, ta.sma(close, mtf5_length)) : na
+
+// 4. Contar el número de MTFs habilitadas
+num_enabled_mtf = (mtf1_enabled ? 1 : 0) + 
+                  (mtf2_enabled ? 1 : 0) + 
+                  (mtf3_enabled ? 1 : 0) + 
+                  (mtf4_enabled ? 1 : 0) + 
+                  (mtf5_enabled ? 1 : 0)
+
+// 5. Definir las condiciones Excluyentes y Opcionales por separado
+// Condición Excluyente: Todas las MTFs habilitadas deben cumplir la condición
+excluyentes_condition = (num_enabled_mtf > 0 and    (mtf1_enabled ? close > mtf1 : true) and    (mtf2_enabled ? close > mtf2 : true) and    (mtf3_enabled ? close > mtf3 : true) and    (mtf4_enabled ? close > mtf4 : true) and    (mtf5_enabled ? close > mtf5 : true))
+
+// Condición Opcional: Al menos una de las MTFs habilitadas debe cumplir la condición
+opcionales_condition = (num_enabled_mtf > 0 and    ((mtf1_enabled and close > mtf1) or     (mtf2_enabled and close > mtf2) or     (mtf3_enabled and close > mtf3) or     (mtf4_enabled and close > mtf4) or     (mtf5_enabled and close > mtf5)))
+
+// 6. Definir mtf_compra y mtf_venta utilizando las condiciones intermedias
+mtf_compra = enable_mtf_conditions ?     (mtf_condition_mode == "Excluyentes" ? excluyentes_condition : opcionales_condition)     :     true
+
+mtf_venta = enable_mtf_conditions ?     (mtf_condition_mode == "Excluyentes" ? excluyentes_condition : opcionales_condition)     :     true
+
+// 7. Visualización de las MTFs habilitadas utilizando operadores ternarios
+plot(mtf1_enabled ? mtf1 : na, color=color.new(color.blue, 0), linewidth=1, title='MTF1 SMA')
+plot(mtf2_enabled ? mtf2 : na, color=color.new(color.orange, 0), linewidth=1, title='MTF2 SMA')
+plot(mtf3_enabled ? mtf3 : na, color=color.new(color.purple, 0), linewidth=1, title='MTF3 SMA')
+plot(mtf4_enabled ? mtf4 : na, color=color.new(color.green, 0), linewidth=1, title='MTF4 SMA')
+plot(mtf5_enabled ? mtf5 : na, color=color.new(color.red, 0), linewidth=1, title='MTF5 SMA')
+
+// --- Fin de las modificaciones ---
+
+
+
+// MACD, RSI, MOMENTUM y Divergencias// Entradas del indicador MACD
+// Activar MACD
+macd_t1_enabled = input(true, title='Activar MACD T1', group='MACD')
+macd_t1_timeframe = input.timeframe('60', title='T1', inline='macd_t1', group='MACD')
+
+macd_t2_enabled = input(false, title='Activar MACD T2', group='MACD')
+macd_t2_timeframe = input.timeframe('240', title='T2', inline='macd_t2', group='MACD')
+
+macd_t3_enabled = input(false, title='Activar MACD T3',  group='MACD')
+macd_t3_timeframe = input.timeframe('D', title='T3', inline='macd_t3', group='MACD')
+
+// Configuración del MACD
+fastLength = 12
+slowLength = 26
+signalLength = 9
+
+// Cálculo del MACD para múltiples temporalidades
+fastMA_t1 = request.security(syminfo.tickerid, macd_t1_timeframe, ta.ema(close, fastLength))
+slowMA_t1 = request.security(syminfo.tickerid, macd_t1_timeframe, ta.ema(close, slowLength))
+macd_t1 = fastMA_t1 - slowMA_t1
+signal_t1 = request.security(syminfo.tickerid, macd_t1_timeframe, ta.sma(macd_t1, signalLength))
+hist_t1 = macd_t1 - signal_t1
+
+fastMA_t2 = request.security(syminfo.tickerid, macd_t2_timeframe, ta.ema(close, fastLength))
+slowMA_t2 = request.security(syminfo.tickerid, macd_t2_timeframe, ta.ema(close, slowLength))
+macd_t2 = fastMA_t2 - slowMA_t2
+signal_t2 = request.security(syminfo.tickerid, macd_t2_timeframe, ta.sma(macd_t2, signalLength))
+hist_t2 = macd_t2 - signal_t2
+
+fastMA_t3 = request.security(syminfo.tickerid, macd_t3_timeframe, ta.ema(close, fastLength))
+slowMA_t3 = request.security(syminfo.tickerid, macd_t3_timeframe, ta.ema(close, slowLength))
+macd_t3 = fastMA_t3 - slowMA_t3
+signal_t3 = request.security(syminfo.tickerid, macd_t3_timeframe, ta.sma(macd_t3, signalLength))
+hist_t3 = macd_t3 - signal_t3
+
+// Condiciones del MACD para compra y venta
+macd_IsAbove_t1 = macd_t1 >= signal_t1
+macd_IsBelow_t1 = macd_t1 < signal_t1
+macd_IsAbove_t2 = macd_t2 >= signal_t2
+macd_IsBelow_t2 = macd_t2 < signal_t2
+macd_IsAbove_t3 = macd_t3 >= signal_t3
+macd_IsBelow_t3 = macd_t3 < signal_t3
+
+histA_IsUp_t1 = hist_t1 > hist_t1[1] and hist_t1 > 0
+histA_IsDown_t1 = hist_t1 < hist_t1[1] and hist_t1 > 0
+histB_IsDown_t1 = hist_t1 < hist_t1[1] and hist_t1 <= 0
+histB_IsUp_t1 = hist_t1 > hist_t1[1] and hist_t1 <= 0
+
+histA_IsUp_t2 = hist_t2 > hist_t2[1] and hist_t2 > 0
+histA_IsDown_t2 = hist_t2 < hist_t2[1] and hist_t2 > 0
+histB_IsDown_t2 = hist_t2 < hist_t2[1] and hist_t2 <= 0
+histB_IsUp_t2 = hist_t2 > hist_t2[1] and hist_t2 <= 0
+
+histA_IsUp_t3 = hist_t3 > hist_t3[1] and hist_t3 > 0
+histA_IsDown_t3 = hist_t3 < hist_t3[1] and hist_t3 > 0
+histB_IsDown_t3 = hist_t3 < hist_t3[1] and hist_t3 <= 0
+histB_IsUp_t3 = hist_t3 > hist_t3[1] and hist_t3 <= 0
+
+// Señales de MACD para compra y venta
+macd_compra = macd_t1_enabled and macd_IsAbove_t1 or macd_t2_enabled and macd_IsAbove_t2 or macd_t3_enabled and macd_IsAbove_t3
+
+macd_venta = macd_t1_enabled and macd_IsBelow_t1 or macd_t2_enabled and macd_IsBelow_t2 or macd_t3_enabled and macd_IsBelow_t3
+
+hist_compra = macd_t1_enabled and (histB_IsUp_t1 or histA_IsUp_t1) or macd_t2_enabled and (histB_IsUp_t2 or histA_IsUp_t2) or macd_t3_enabled and (histB_IsUp_t3 or histA_IsUp_t3)
+
+hist_venta = macd_t1_enabled and (histA_IsDown_t1 or histB_IsDown_t1) or macd_t2_enabled and (histA_IsDown_t2 or histB_IsDown_t2) or macd_t3_enabled and (histA_IsDown_t3 or histB_IsDown_t3)
+
+
+
+
+
+
+
+
+
+
+// Entradas de configuración de temporalidades para WaveTrend
+wt_t1_enabled = input(true, title="Activar WaveTrend T1", group='WaveTrend')
+wt_t1_timeframe = input.timeframe("60", title="T1", inline='wt_t1', group='WaveTrend')
+
+wt_t2_enabled = input(false, title="Activar WaveTrend T2", group='WaveTrend')
+wt_t2_timeframe = input.timeframe("240", title="T2", inline='wt_t2', group='WaveTrend')
+
+wt_t3_enabled = input(false, title="Activar WaveTrend T3", group='WaveTrend')
+wt_t3_timeframe = input.timeframe("D", title="T3", inline='wt_t3', group='WaveTrend')
+
+// Entradas para el cálculo de WaveTrend
+wtMASource = input.source(hlc3, title="WT MA Source")  // Fuente de datos para la media móvil del WaveTrend
+wtChannelLen = 10 // Longitud del canal de WaveTrend
+wtAverageLen = 21 // Longitud del promedio de WaveTrend
+wtMALen = 2 // Longitud de la media móvil del WaveTrend
+
+// Entradas de configuración de señales
+div_lookbackwt = input.int(5, title="Velas para mantener señales divergentes")
+rev_lookback = input.int(5, title="Velas para mantener señales de reversión")
+
+// Variables necesarias para WaveTrend
+osLevel = -60  // Define el nivel de sobreventa
+obLevel = 60// Define el nivel de sobrecompra
+lookbackLeft = 20// Ventana de búsqueda de divergencias a la izquierda
+lookbackRight = 1 // Ventana de búsqueda de divergencias a la derecha
+wtDivergenceLength = 20  // Longitud de divergencia para WaveTrend
+
+// Función para calcular WaveTrend
+f_wavetrend(src, chlen, avg, malen) =>
+    esa = ta.ema(src, chlen)
+    de = ta.ema(math.abs(src - esa), chlen)
+    ci = (src - esa) / (0.015 * de)
+    wt1 = ta.ema(ci, avg)
+    wt2 = ta.sma(wt1, malen)
+    wtVwap = wt1 - wt2
+    wtOversold = wt2 <= osLevel
+    wtOverbought = wt2 >= obLevel
+    wtCross = ta.cross(wt1, wt2)
+    wtCrossUp = wt2 - wt1 <= 0
+    wtCrossDown = wt2 - wt1 >= 0
+    [wt1, wt2, wtOversold, wtOverbought, wtCross, wtCrossUp, wtCrossDown, wtVwap]
+
+// Función para determinar divergencias
+f_findDivs(src, topLimit, botLimit, useLimits) =>
+    fractalTop = ta.pivothigh(src, lookbackLeft, lookbackRight) and (useLimits ? src[2] >= topLimit : true) ? src[2] : na
+    fractalBot = ta.pivotlow(src, lookbackLeft, lookbackRight) and (useLimits ? src[2] <= botLimit : true) ? src[2] : na
+    highPrev = ta.valuewhen(fractalTop, src[2], 0)[2]
+    highPrice = ta.valuewhen(fractalTop, high[2], 0)[2]
+    lowPrev = ta.valuewhen(fractalBot, src[2], 0)[2]
+    lowPrice = ta.valuewhen(fractalBot, low[2], 0)[2]
+    bearSignal = fractalTop and high[2] > highPrice and src[2] < highPrev
+    bullSignal = fractalBot and low[2] < lowPrice and src[2] > lowPrev
+    [fractalTop, fractalBot, lowPrev, bearSignal, bullSignal]
+
+// WaveTrend T1
+[wt1_t1, wt2_t1, wtOversold_t1, wtOverbought_t1, wtCross_t1, wtCrossUp_t1, wtCrossDown_t1, wtVwap_t1] = request.security(syminfo.tickerid, wt_t1_timeframe, f_wavetrend(wtMASource, wtChannelLen, wtAverageLen, wtMALen))
+[wtFractalTop_t1, wtFractalBot_t1, wtLow_prev_t1, wtBearDiv_t1, wtBullDiv_t1] = request.security(syminfo.tickerid, wt_t1_timeframe, f_findDivs(wt2_t1, obLevel, osLevel, true))
+bullishWTDivergence_t1 = ta.crossover(wt1_t1, ta.lowest(wt1_t1, wtDivergenceLength))
+bearishWTDivergence_t1 = ta.crossunder(wt1_t1, ta.highest(wt1_t1, wtDivergenceLength))
+
+// WaveTrend T2
+[wt1_t2, wt2_t2, wtOversold_t2, wtOverbought_t2, wtCross_t2, wtCrossUp_t2, wtCrossDown_t2, wtVwap_t2] = request.security(syminfo.tickerid, wt_t2_timeframe, f_wavetrend(wtMASource, wtChannelLen, wtAverageLen, wtMALen))
+[wtFractalTop_t2, wtFractalBot_t2, wtLow_prev_t2, wtBearDiv_t2, wtBullDiv_t2] = request.security(syminfo.tickerid, wt_t2_timeframe, f_findDivs(wt2_t2, obLevel, osLevel, true))
+bullishWTDivergence_t2 = ta.crossover(wt1_t2, ta.lowest(wt1_t2, wtDivergenceLength))
+bearishWTDivergence_t2 = ta.crossunder(wt1_t2, ta.highest(wt1_t2, wtDivergenceLength))
+
+// WaveTrend T3
+[wt1_t3, wt2_t3, wtOversold_t3, wtOverbought_t3, wtCross_t3, wtCrossUp_t3, wtCrossDown_t3, wtVwap_t3] = request.security(syminfo.tickerid, wt_t3_timeframe, f_wavetrend(wtMASource, wtChannelLen, wtAverageLen, wtMALen))
+[wtFractalTop_t3, wtFractalBot_t3, wtLow_prev_t3, wtBearDiv_t3, wtBullDiv_t3] = request.security(syminfo.tickerid, wt_t3_timeframe, f_findDivs(wt2_t3, obLevel, osLevel, true))
+bullishWTDivergence_t3 = ta.crossover(wt1_t3, ta.lowest(wt1_t3, wtDivergenceLength))
+bearishWTDivergence_t3 = ta.crossunder(wt1_t3, ta.highest(wt1_t3, wtDivergenceLength))
+
+// Variables para almacenar las últimas señales de divergencia
+var int last_bull_divergence = na
+var int last_bear_divergence = na
+
+// Variables para almacenar las últimas señales de reversión
+var int last_bull_reversal = na
+var int last_bear_reversal = na
+
+// Actualización de señales de divergencia
+if wt_t1_enabled and (wtBullDiv_t1 or bullishWTDivergence_t1)
+    last_bull_divergence := ta.valuewhen(wtBullDiv_t1 or bullishWTDivergence_t1, bar_index, 0)
+if wt_t1_enabled and (wtBearDiv_t1 or bearishWTDivergence_t1)
+    last_bear_divergence := ta.valuewhen(wtBearDiv_t1 or bearishWTDivergence_t1, bar_index, 0)
+
+if wt_t2_enabled and (wtBullDiv_t2 or bullishWTDivergence_t2)
+    last_bull_divergence := ta.valuewhen(wtBullDiv_t2 or bullishWTDivergence_t2, bar_index, 0)
+if wt_t2_enabled and (wtBearDiv_t2 or bearishWTDivergence_t2)
+    last_bear_divergence := ta.valuewhen(wtBearDiv_t2 or bearishWTDivergence_t2, bar_index, 0)
+
+if wt_t3_enabled and (wtBullDiv_t3 or bullishWTDivergence_t3)
+    last_bull_divergence := ta.valuewhen(wtBullDiv_t3 or bullishWTDivergence_t3, bar_index, 0)
+if wt_t3_enabled and (wtBearDiv_t3 or bearishWTDivergence_t3)
+    last_bear_divergence := ta.valuewhen(wtBearDiv_t3 or bearishWTDivergence_t3, bar_index, 0)
+
+// Actualización de señales de reversión
+if wt_t1_enabled and wtCrossUp_t1 and wtOversold_t1
+    last_bull_reversal := ta.valuewhen(wtCrossUp_t1 and wtOversold_t1, bar_index, 0)
+if wt_t1_enabled and wtCrossDown_t1 and wtOverbought_t1
+    last_bear_reversal := ta.valuewhen(wtCrossDown_t1 and wtOverbought_t1, bar_index, 0)
+
+if wt_t2_enabled and wtCrossUp_t2 and wtOversold_t2
+    last_bull_reversal := ta.valuewhen(wtCrossUp_t2 and wtOversold_t2, bar_index, 0)
+if wt_t2_enabled and wtCrossDown_t2 and wtOverbought_t2
+    last_bear_reversal := ta.valuewhen(wtCrossDown_t2 and wtOverbought_t2, bar_index, 0)
+
+if wt_t3_enabled and wtCrossUp_t3 and wtOversold_t3
+    last_bull_reversal := ta.valuewhen(wtCrossUp_t3 and wtOversold_t3, bar_index, 0)
+if wt_t3_enabled and wtCrossDown_t3 and wtOverbought_t3
+    last_bear_reversal := ta.valuewhen(wtCrossDown_t3 and wtOverbought_t3, bar_index, 0)
+
+// Condiciones de compra y venta para divergencias
+wtdiv_compra = not na(last_bull_divergence) and (bar_index - last_bull_divergence) <= div_lookbackwt
+wtdiv_venta = not na(last_bear_divergence) and (bar_index - last_bear_divergence) <= div_lookbackwt
+
+// Condiciones de compra y venta para reversión
+wt_compra = not na(last_bull_reversal) and (bar_index - last_bull_reversal) <= rev_lookback
+wt_venta = not na(last_bear_reversal) and (bar_index - last_bear_reversal) <= rev_lookback
+
+
+
+
+
+
+
+// Entradas del indicador RSI + BB
+rsi_bb_period = 14  // Período de RSI
+rsi_bb_ma_period = 20 // Período para la EMA en BB
+rsi_bb_mult = 2  // Número de desviaciones estándar
+rsi_bb_dispersion = 0.1 // Dispersión alrededor de la EMA
+
+// Cálculos del indicador RSI + BB
+srcbb = hlc3
+
+rsi_bb_value = ta.rsi(srcbb, rsi_bb_period)  // Calcula el RSI
+rsi_bb_basis = ta.ema(rsi_bb_value, rsi_bb_ma_period)  // Cálculo de la EMA como base de las BB
+rsi_bb_dev = rsi_bb_mult * ta.stdev(rsi_bb_value, rsi_bb_ma_period)  // Desviación estándar
+rsi_bb_upper = rsi_bb_basis + rsi_bb_dev  // Banda superior de BB
+rsi_bb_lower = rsi_bb_basis - rsi_bb_dev  // Banda inferior de BB
+rsi_bb_disp_up = rsi_bb_basis + ((rsi_bb_upper - rsi_bb_lower) * rsi_bb_dispersion)  // Límite superior de dispersión
+rsi_bb_disp_down = rsi_bb_basis - ((rsi_bb_upper - rsi_bb_lower) * rsi_bb_dispersion)  // Límite inferior de dispersión
+
+// Cálculo del color del RSI
+rsi_bb_color = rsi_bb_value >= rsi_bb_disp_up ? color.lime : rsi_bb_value <= rsi_bb_disp_down ? color.red : color.new(color.yellow, 0) 
+
+// Visualización del indicador
+rsi_bb_h1 = hline(70, "Overbought", color=color.gray, linestyle=hline.style_dotted)
+rsi_bb_h2 = hline(30, "Oversold", color=color.gray, linestyle=hline.style_dotted)
+fill(rsi_bb_h1, rsi_bb_h2, color=color.gray, transp=95)
+
+
+// Condiciones de compra y venta
+rsi_bb_buy_signal = ta.crossover(rsi_bb_value, rsi_bb_disp_up)  // Señal de compra
+rsi_bb_sell_signal = ta.crossunder(rsi_bb_value, rsi_bb_disp_down)  // Señal de venta
+
+alertcondition(rsi_bb_buy_signal, title="RSI Cross Above Dispersion Area", message="RSI crossed above dispersion area.")
+alertcondition(rsi_bb_sell_signal, title="RSI Cross Under Dispersion Area", message="RSI crossed below dispersion area.")
+
+// Entradas para habilitar RSI en tres temporalidades
+// Activar RSI
+rsi_t1_enabled = input.bool(true, title="Activar RSI T1", group='RSI')
+rsi_t1_timeframe = input.timeframe('60', title="T1", inline='rsi_t1', group='RSI')
+
+rsi_t2_enabled = input.bool(false, title="Activar RSI T2", group='RSI')
+rsi_t2_timeframe = input.timeframe('240', title="T2", inline='rsi_t2', group='RSI')
+
+rsi_t3_enabled = input.bool(false, title="Activar RSI T3", group='RSI')
+rsi_t3_timeframe = input.timeframe('D', title="T3", inline='rsi_t3', group='RSI')
+
+
+
+
+
+// Función para calcular RSI + BB por temporalidad
+f_calculate_rsi_bb(_timeframe) =>
+    _rsi_value = ta.rsi(request.security(syminfo.tickerid, _timeframe, src), rsi_bb_period)
+    _rsi_basis = ta.ema(_rsi_value, rsi_bb_ma_period)
+    _rsi_dev = rsi_bb_mult * ta.stdev(_rsi_value, rsi_bb_ma_period)
+    _rsi_upper = _rsi_basis + _rsi_dev
+    _rsi_lower = _rsi_basis - _rsi_dev
+    _rsi_disp_up = _rsi_basis + ((_rsi_upper - _rsi_lower) * rsi_bb_dispersion)
+    _rsi_disp_down = _rsi_basis - ((_rsi_upper - _rsi_lower) * rsi_bb_dispersion)
+    [_rsi_value, _rsi_disp_up, _rsi_disp_down]  // Retorna los valores de RSI, límite superior e inferior de dispersión
+
+// Cálculos del RSI + BB para cada temporalidad
+float rsit1 = na
+float disp_up_t1 = na
+float disp_down_t1 = na
+
+if rsi_t1_enabled
+    [rsit1_temporary, disp_up_t1_temporary, disp_down_t1_temporary] = f_calculate_rsi_bb(rsi_t1_timeframe)
+    rsit1 := rsit1_temporary
+    disp_up_t1 := disp_up_t1_temporary
+    disp_down_t1 := disp_down_t1_temporary
+// Para el segundo conjunto de variables
+float rsit2 = na
+float disp_up_t2 = na
+float disp_down_t2 = na
+
+if rsi_t2_enabled
+    [rsit2_temporary, disp_up_t2_temporary, disp_down_t2_temporary] = f_calculate_rsi_bb(rsi_t2_timeframe)
+    rsit2 := rsit2_temporary
+    disp_up_t2 := disp_up_t2_temporary
+    disp_down_t2 := disp_down_t2_temporary
+
+// Para el tercer conjunto de variables
+float rsit3 = na
+float disp_up_t3 = na
+float disp_down_t3 = na
+
+if rsi_t3_enabled
+    [rsit3_temporary, disp_up_t3_temporary, disp_down_t3_temporary] = f_calculate_rsi_bb(rsi_t3_timeframe)
+    rsit3 := rsit3_temporary
+    disp_up_t3 := disp_up_t3_temporary
+    disp_down_t3 := disp_down_t3_temporary
+
+
+// Señales de compra y venta basadas en el RSI + BB en temporalidades múltiples
+rsi_t1_buy_signal = rsit1 >= disp_up_t1
+rsi_t1_sell_signal = rsit1 <= disp_down_t1
+
+rsi_t2_buy_signal = rsit2 >= disp_up_t2
+rsi_t2_sell_signal = rsit2 <= disp_down_t2
+
+rsi_t3_buy_signal = rsit3 >= disp_up_t3
+rsi_t3_sell_signal = rsit3 <= disp_down_t3
+
+// Condiciones de compra y venta basadas en las señales de RSI + BB
+rsi_compra = (rsi_t1_enabled and rsi_t1_buy_signal) or (rsi_t2_enabled and rsi_t2_buy_signal) or (rsi_t3_enabled and rsi_t3_buy_signal)
+rsi_venta = (rsi_t1_enabled and rsi_t1_sell_signal) or (rsi_t2_enabled and rsi_t2_sell_signal) or (rsi_t3_enabled and rsi_t3_sell_signal)
+
+
+
+
+
+// Squeeze Momentum Indicator
+length = 20
+mult = 2.0
+lengthKC = 20
+multKC = 1.5
+useTrueRange = true
+// Cálculo del Bollinger Bands
+source = close
+basis = ta.sma(source, length)
+dev = multKC * ta.stdev(source, length)
+upperBB = basis + dev
+lowerBB = basis - dev
+// Cálculo del Keltner Channel
+mas = ta.sma(source, lengthKC)
+range_1 = useTrueRange ? ta.tr : high - low
+rangema = ta.sma(range_1, lengthKC)
+upperKC = mas + rangema * multKC
+lowerKC = mas - rangema * multKC
+// Condiciones de Squeeze
+sqzOn = lowerBB > lowerKC and upperBB < upperKC
+sqzOff = lowerBB < lowerKC and upperBB > upperKC
+noSqz = not sqzOn and not sqzOff
+// Cálculo del valor de Momentum
+val = ta.linreg(source - math.avg(math.avg(ta.highest(high, lengthKC), ta.lowest(low, lengthKC)), ta.sma(close, lengthKC)), lengthKC, 0)
+// Colores del histograma
+bcolor = val > 0 ? val > nz(val[1]) ? color.lime : color.green : val < nz(val[1]) ? color.red : color.maroon
+scolor = noSqz ? color.blue : sqzOn ? color.black : color.gray
+
+
+
+// Activar Squeeze Momentum
+sqz_t1_enabled = input(true, title='Activar Squeeze Momentum T1', group='Squeeze Momentum')
+sqz_t1_timeframe = input.timeframe('60', title='T1', inline='sqz_t1', group='Squeeze Momentum')
+
+sqz_t2_enabled = input(false, title='Activar Squeeze Momentum T2', group='Squeeze Momentum')
+sqz_t2_timeframe = input.timeframe('240', title='T2', inline='sqz_t2', group='Squeeze Momentum')
+
+sqz_t3_enabled = input(false, title='Activar Squeeze Momentum T3', group='Squeeze Momentum')
+sqz_t3_timeframe = input.timeframe('D', title='T3', inline='sqz_t3', group='Squeeze Momentum')
+
+
+// Configuración de temporalidades para Squeeze Momentum
+
+
+
+/// Squeeze Momentum por Temporalidades
+sqz_momentum_t1_val = request.security(syminfo.tickerid, sqz_t1_timeframe, ta.linreg(source - math.avg(math.avg(ta.highest(high, lengthKC), ta.lowest(low, lengthKC)), ta.sma(close, lengthKC)), lengthKC, 0))
+sqz_momentum_t2_val = request.security(syminfo.tickerid, sqz_t2_timeframe, ta.linreg(source - math.avg(math.avg(ta.highest(high, lengthKC), ta.lowest(low, lengthKC)), ta.sma(close, lengthKC)), lengthKC, 0))
+sqz_momentum_t3_val = request.security(syminfo.tickerid, sqz_t3_timeframe, ta.linreg(source - math.avg(math.avg(ta.highest(high, lengthKC), ta.lowest(low, lengthKC)), ta.sma(close, lengthKC)), lengthKC, 0))
+
+sqz_momentum_t1_bcolor = sqz_momentum_t1_val > 0 ? sqz_momentum_t1_val > nz(sqz_momentum_t1_val[1]) ? color.lime : color.green : sqz_momentum_t1_val < nz(sqz_momentum_t1_val[1]) ? color.red : color.maroon
+sqz_momentum_t2_bcolor = sqz_momentum_t2_val > 0 ? sqz_momentum_t2_val > nz(sqz_momentum_t2_val[1]) ? color.lime : color.green : sqz_momentum_t2_val < nz(sqz_momentum_t2_val[1]) ? color.red : color.maroon
+sqz_momentum_t3_bcolor = sqz_momentum_t3_val > 0 ? sqz_momentum_t3_val > nz(sqz_momentum_t3_val[1]) ? color.lime : color.green : sqz_momentum_t3_val < nz(sqz_momentum_t3_val[1]) ? color.red : color.maroon
+
+sqz_momentum_compra = sqz_t1_enabled and (sqz_momentum_t1_bcolor == color.lime or sqz_momentum_t1_bcolor == color.maroon) or sqz_t2_enabled and (sqz_momentum_t2_bcolor == color.lime or sqz_momentum_t2_bcolor == color.maroon) or sqz_t3_enabled and (sqz_momentum_t3_bcolor == color.lime or sqz_momentum_t3_bcolor == color.maroon)
+
+sqz_momentum_venta = sqz_t1_enabled and (sqz_momentum_t1_bcolor == color.red or sqz_momentum_t1_bcolor == color.green) or sqz_t2_enabled and (sqz_momentum_t2_bcolor == color.red or sqz_momentum_t2_bcolor == color.green) or sqz_t3_enabled and (sqz_momentum_t3_bcolor == color.red or sqz_momentum_t3_bcolor == color.green)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//////
+
+
+
+
+lb = input.int(5, title='Left Bars', minval=1, group='Parametros Divergences')
+rb = input.int(5, title='Right Bars', minval=1, group='Parametros Divergences')
+div_lookback = input.int(3, title='Velas atrás para considerar divergencias', minval=1, group='Parametros Divergences')
+showhidden = input(false, title='Show Hidden Divergences', group='Parametros Divergences')
+chcut = input(true, title='Check Cut-Through in indicators !', group='Parametros Divergences')
+shownum = input(true, title='Show Divergence Number', group='Parametros Divergences')
+showindis = input(false, title='Show Indicator Names', group='Parametros Divergences')
+showpivot = input(false, title='Show Pivot Points', group='Parametros Divergences')
+chwidth = input(true, title='Change Width by Number of Divergence', group='Parametros Divergences')
+showlimit = input.int(1, title='Minimum Number of Divergence', minval=1, maxval=11, group='Parametros Divergences')
+calcmacd = input(true, title='MACD', group='Parametros Divergences')
+calcmacda = input(true, title='MACD Histogram', group='Parametros Divergences')
+calcrsi = input(true, title='RSI', group='Parametros Divergences')
+calcstoc = input(true, title='Stochastic', group='Parametros Divergences')
+calccci = input(true, title='CCI', group='Parametros Divergences')
+calcmom = input(true, title='Momentum', group='Parametros Divergences')
+calcobv = input(true, title='OBV', group='Parametros Divergences')
+calcdi = input(true, title='Diosc', group='Parametros Divergences')
+calcvwmacd = input(true, title='VWmacd', group='Parametros Divergences')
+calccmf = input(true, title='Chaikin Money Flow', group='Parametros Divergences')
+calcmfi = input(true, title='Money Flow Index', group='Parametros Divergences')
+
+// RSI
+[macd, signal, deltamacd] = ta.macd(close, 12, 26, 9)
+// Momentum
+moment = ta.mom(close, 10)
+// CCI
+cci = ta.cci(close, 10)
+// OBV
+rsi_period = 14  // Período de RSI
+
+rsi = ta.rsi(close, rsi_period)
+Obv = ta.obv  // cum(change(close) > 0 ? volume : change(close) < 0 ? -volume : 0 * volume)
+// Stoch
+stk = ta.sma(ta.stoch(close, high, low, 14), 3)
+// DIOSC
+DI = ta.change(high) - -ta.change(low)
+trur = ta.rma(ta.tr, 14)
+diosc = fixnan(100 * ta.rma(DI, 14) / trur)
+// volume weighted macd
+maFast = ta.vwma(close, 12)
+maSlow = ta.vwma(close, 26)
+vwmacd = maFast - maSlow
+// Chaikin money flow
+Cmfm = (close - low - (high - close)) / (high - low)
+Cmfv = Cmfm * volume
+cmf = ta.sma(Cmfv, 21) / ta.sma(volume, 21)
+// Moneyt Flow Index
+Mfi = ta.mfi(close, 14)
+
+float top = na
+float bot = na
+top := ta.pivothigh(lb, rb)
+bot := ta.pivotlow(lb, rb)
+
+plotshape(top and showpivot, text='[PH]', style=shape.labeldown, color=color.new(color.white, 0), textcolor=color.new(color.black, 0), location=location.abovebar, offset=-rb)
+plotshape(bot and showpivot, text='[PL]', style=shape.labeldown, color=color.new(color.white, 0), textcolor=color.new(color.black, 0), location=location.belowbar, offset=-rb)
+
+topc = 0
+botc = 0
+topc := top ? lb : nz(topc[1]) + 1
+botc := bot ? lb : nz(botc[1]) + 1
+
+// Regular Negative /hidden Divergences
+newtop = ta.pivothigh(lb, 0)  // check only left side
+emptyh = true
+if not na(newtop) and (newtop > high[topc] and not showhidden or newtop < high[topc] and showhidden)  // there must not close price higher than the line between last PH and current high
+    diff = (newtop - high[topc]) / topc
+    hline = newtop - diff  // virtual line to check there is no close price higher than it
+    for x = 1 to topc - 1 by 1
+        if close[x] > hline
+            emptyh := false
+            break
+        hline -= diff
+        hline
+else
+    emptyh := false
+    emptyh
+
+// check cut-through in indicators
+nocut1(indi, len) =>
+    _ret = true
+    diff = (indi - nz(indi[len])) / len
+    ln = indi - diff
+    for x = 1 to len - 1 by 1
+        if nz(indi[x]) > ln
+            _ret := false
+            break
+        ln -= diff
+        ln
+    _ret
+
+rsiok = nocut1(rsi, topc)
+macdok = nocut1(macd, topc)
+deltamacdok = nocut1(deltamacd, topc)
+momentok = nocut1(moment, topc)
+cciok = nocut1(cci, topc)
+obvok = nocut1(ta.obv, topc)
+stkok = nocut1(stk, topc)
+dioscok = nocut1(diosc, topc)
+vwmacdok = nocut1(vwmacd, topc)
+cmfok = nocut1(cmf, topc)
+mfiok = nocut1(Mfi, topc)
+
+// Regular Negative Divergences
+negdivergence = 0
+negdivtxt = ''
+if emptyh and not na(newtop) and not showhidden
+    if calcrsi and rsi[topc] > rsi and (not chcut or rsiok)
+        negdivergence += 1
+        negdivtxt := 'RSI\n'
+        negdivtxt
+    if calcmacd and macd[topc] > macd and (not chcut or macdok)
+        negdivergence += 1
+        negdivtxt += 'MACD\n'
+        negdivtxt
+    if calcmacda and deltamacd[topc] > deltamacd and (not chcut or deltamacdok)
+        negdivergence += 1
+        negdivtxt += 'MACD Hist\n'
+        negdivtxt
+    if calcmom and moment[topc] > moment and (not chcut or momentok)
+        negdivergence += 1
+        negdivtxt += 'Momentum\n'
+        negdivtxt
+    if calccci and cci[topc] > cci and (not chcut or cciok)
+        negdivergence += 1
+        negdivtxt += 'CCI\n'
+        negdivtxt
+    if calcobv and Obv[topc] > Obv and (not chcut or obvok)
+        negdivergence += 1
+        negdivtxt += 'OBV\n'
+        negdivtxt
+    if calcstoc and stk[topc] > stk and (not chcut or stkok)
+        negdivergence += 1
+        negdivtxt += 'Stoch\n'
+        negdivtxt
+    if calcdi and diosc[topc] > diosc and (not chcut or dioscok)
+        negdivergence += 1
+        negdivtxt += 'Diosc\n'
+        negdivtxt
+    if calcvwmacd and vwmacd[topc] > vwmacd and (not chcut or vwmacdok)
+        negdivergence += 1
+        negdivtxt += 'VWMacd\n'
+        negdivtxt
+    if calccmf and cmf[topc] > cmf and (not chcut or cmfok)
+        negdivergence += 1
+        negdivtxt += 'CMF\n'
+        negdivtxt
+    if calcmfi and Mfi[topc] > Mfi and (not chcut or mfiok)
+        negdivergence += 1
+        negdivtxt += 'MFI\n'
+        negdivtxt
+
+// negative hidden divergence
+hnegdivergence = 0
+hnegdivtxt = ''
+if emptyh and not na(newtop) and showhidden
+    if calcrsi and rsi[topc] < rsi and (not chcut or rsiok)
+        hnegdivergence += 1
+        hnegdivtxt := 'RSI\n'
+        hnegdivtxt
+    if calcmacd and macd[topc] < macd and (not chcut or macdok)
+        hnegdivergence += 1
+        hnegdivtxt += 'MACD\n'
+        hnegdivtxt
+    if calcmacda and deltamacd[topc] < deltamacd and (not chcut or deltamacdok)
+        hnegdivergence += 1
+        hnegdivtxt += 'MACD Hist\n'
+        hnegdivtxt
+    if calcmom and moment[topc] < moment and (not chcut or momentok)
+        hnegdivergence += 1
+        hnegdivtxt += 'Momentum\n'
+        hnegdivtxt
+    if calccci and cci[topc] < cci and (not chcut or cciok)
+        hnegdivergence += 1
+        hnegdivtxt += 'CCI\n'
+        hnegdivtxt
+    if calcobv and Obv[topc] < Obv and (not chcut or obvok)
+        hnegdivergence += 1
+        hnegdivtxt += 'OBV\n'
+        hnegdivtxt
+    if calcstoc and stk[topc] < stk and (not chcut or stkok)
+        hnegdivergence += 1
+        hnegdivtxt += 'Stoch\n'
+        hnegdivtxt
+    if calcdi and diosc[topc] < diosc and (not chcut or dioscok)
+        hnegdivergence += 1
+        hnegdivtxt += 'Diosc\n'
+        hnegdivtxt
+    if calcvwmacd and vwmacd[topc] < vwmacd and (not chcut or vwmacdok)
+        hnegdivergence += 1
+        hnegdivtxt += 'VWMacd\n'
+        hnegdivtxt
+    if calccmf and cmf[topc] < cmf and (not chcut or cmfok)
+        hnegdivergence += 1
+        hnegdivtxt += 'CMF\n'
+        hnegdivtxt
+    if calcmfi and Mfi[topc] < Mfi and (not chcut or mfiok)
+        hnegdivergence += 1
+        hnegdivtxt += 'MFI\n'
+        hnegdivtxt
+
+newareah = false
+newareah := top ? false : nz(newareah[1], false)
+if negdivergence >= showlimit or hnegdivergence >= showlimit
+    var line divlh = na
+    var label labh = na
+    if newareah  // we remove old line until It reaches new pivot point (like animation ;)
+        line.delete(divlh)
+        label.delete(labh)
+    newwd = not showhidden ? not chwidth ? 2 : negdivergence <= 2 ? 2 : negdivergence <= 5 ? 3 : negdivergence <= 8 ? 4 : 5 : not chwidth ? 2 : hnegdivergence <= 2 ? 2 : hnegdivergence <= 5 ? 3 : hnegdivergence <= 8 ? 4 : 5
+
+    divlh := line.new(bar_index - topc, high[topc], bar_index, high, color=color.red, width=newwd)
+    if shownum or showindis
+        txt = showindis ? showhidden ? hnegdivtxt : negdivtxt : ''
+        txt += (shownum ? showhidden ? str.tostring(hnegdivergence) : str.tostring(negdivergence) : '')
+        labh := label.new(bar_index, na, text=txt, color=color.red, textcolor=color.white, style=label.style_label_down, yloc=yloc.abovebar)
+        labh
+    newareah := true
+    newareah
+
+// Regular / Hidden positive Divergence
+newbot = ta.pivotlow(lb, 0)  // check only left side
+emptyl = true
+if not na(newbot) and (newbot < low[botc] and not showhidden or newbot > low[botc] and showhidden)  // there must not close price lower than the line between last PL and current low
+    diff = (newbot - low[botc]) / botc
+    lline = newbot - diff  // virtual line to check there is no close price lower than it
+    for x = 1 to botc - 1 by 1
+        if close[x] < lline
+            emptyl := false
+            break
+        lline -= diff
+        lline
+else
+    emptyl := false
+    emptyl
+
+// check cut-through in indicators
+nocut2(indi, len) =>
+    _ret = true
+    diff = (indi - nz(indi[len])) / len
+    ln = indi - diff
+    for x = 1 to len - 1 by 1
+        if nz(indi[x]) < ln
+            _ret := false
+            break
+        ln -= diff
+        ln
+    _ret
+
+rsiok := nocut2(rsi, botc)
+macdok := nocut2(macd, botc)
+deltamacdok := nocut2(deltamacd, botc)
+momentok := nocut2(moment, botc)
+cciok := nocut2(cci, botc)
+obvok := nocut2(ta.obv, botc)
+stkok := nocut2(stk, botc)
+dioscok := nocut2(diosc, botc)
+vwmacdok := nocut2(vwmacd, botc)
+cmfok := nocut2(cmf, botc)
+mfiok := nocut2(Mfi, botc)
+
+//positive regular divergence
+posdivergence = 0
+posdivtxt = ''
+if emptyl and not na(newbot) and not showhidden
+    if calcrsi and rsi[botc] < rsi and (not chcut or rsiok)
+        posdivergence += 1
+        posdivtxt := 'RSI\n'
+        posdivtxt
+    if calcmacd and macd[botc] < macd and (not chcut or macdok)
+        posdivergence += 1
+        posdivtxt += 'MACD\n'
+        posdivtxt
+    if calcmacda and deltamacd[botc] < deltamacd and (not chcut or deltamacdok)
+        posdivergence += 1
+        posdivtxt += 'MACD Hist\n'
+        posdivtxt
+    if calcmom and moment[botc] < moment and (not chcut or momentok)
+        posdivergence += 1
+        posdivtxt += 'Momentum\n'
+        posdivtxt
+    if calccci and cci[botc] < cci and (not chcut or cciok)
+        posdivergence += 1
+        posdivtxt += 'CCI\n'
+        posdivtxt
+    if calcobv and Obv[botc] < Obv and (not chcut or obvok)
+        posdivergence += 1
+        posdivtxt += 'OBV\n'
+        posdivtxt
+    if calcstoc and stk[botc] < stk and (not chcut or stkok)
+        posdivergence += 1
+        posdivtxt += 'Stoch\n'
+        posdivtxt
+    if calcdi and diosc[botc] < diosc and (not chcut or dioscok)
+        posdivergence += 1
+        posdivtxt += 'Diosc\n'
+        posdivtxt
+    if calcvwmacd and vwmacd[botc] < vwmacd and (not chcut or vwmacdok)
+        posdivergence += 1
+        posdivtxt += 'VWMacd\n'
+        posdivtxt
+    if calccmf and cmf[botc] < cmf and (not chcut or cmfok)
+        posdivergence += 1
+        posdivtxt += 'CMF\n'
+        posdivtxt
+    if calcmfi and Mfi[botc] < Mfi and (not chcut or mfiok)
+        posdivergence += 1
+        posdivtxt += 'MFI\n'
+        posdivtxt
+
+// Hidden Positive Divergences
+hposdivergence = 0
+hposdivtxt = ''
+if emptyl and not na(newbot) and showhidden
+    if calcrsi and rsi[botc] > rsi and (not chcut or rsiok)
+        hposdivergence += 1
+        hposdivtxt := 'RSI\n'
+        hposdivtxt
+    if calcmacd and macd[botc] > macd and (not chcut or macdok)
+        hposdivergence += 1
+        hposdivtxt += 'MACD\n'
+        hposdivtxt
+    if calcmacda and deltamacd[botc] > deltamacd and (not chcut or deltamacdok)
+        hposdivergence += 1
+        hposdivtxt += 'MACD Hist\n'
+        hposdivtxt
+    if calcmom and moment[botc] > moment and (not chcut or momentok)
+        hposdivergence += 1
+        hposdivtxt += 'Momentum\n'
+        hposdivtxt
+    if calccci and cci[botc] > cci and (not chcut or cciok)
+        hposdivergence += 1
+        hposdivtxt += 'CCI\n'
+        hposdivtxt
+    if calcobv and Obv[botc] > Obv and (not chcut or obvok)
+        hposdivergence += 1
+        hposdivtxt += 'OBV\n'
+        hposdivtxt
+    if calcstoc and stk[botc] > stk and (not chcut or stkok)
+        hposdivergence += 1
+        hposdivtxt += 'Stoch\n'
+        hposdivtxt
+    if calcdi and diosc[botc] > diosc and (not chcut or dioscok)
+        hposdivergence += 1
+        hposdivtxt += 'Diosc\n'
+        hposdivtxt
+    if calcvwmacd and vwmacd[botc] > vwmacd and (not chcut or vwmacdok)
+        hposdivergence += 1
+        hposdivtxt += 'VWMacd\n'
+        hposdivtxt
+    if calccmf and cmf[botc] > cmf and (not chcut or cmfok)
+        hposdivergence += 1
+        hposdivtxt := hnegdivtxt + 'CMF\n'
+        hposdivtxt
+    if calcmfi and Mfi[botc] > Mfi and (not chcut or mfiok)
+        hposdivergence += 1
+        hposdivtxt += 'MFI\n'
+        hposdivtxt
+
+newareal = false
+newareal := bot ? false : nz(newareal[1], false)
+if posdivergence >= showlimit or hposdivergence >= showlimit
+    var line divl = na
+    var label lab = na
+    if newareal  // we remove old line until It reaches new pivot point (like animation ;)
+        line.delete(divl)
+        label.delete(lab)
+    newwd = not showhidden ? not chwidth ? 1 : posdivergence <= 2 ? 2 : posdivergence <= 5 ? 3 : posdivergence <= 8 ? 4 : 5 : not chwidth ? 2 : hposdivergence <= 2 ? 2 : hposdivergence <= 5 ? 3 : hposdivergence <= 8 ? 4 : 5
+
+    divl := line.new(bar_index - botc, low[botc], bar_index, low, color=color.lime, width=newwd)
+    if shownum or showindis
+        txt = showindis ? showhidden ? hposdivtxt : posdivtxt : ''
+        txt += (shownum ? showhidden ? str.tostring(hposdivergence) : str.tostring(posdivergence) : '')
+        lab := label.new(bar_index, na, text=txt, color=color.lime, textcolor=color.black, style=label.style_label_up, yloc=yloc.belowbar)
+        lab
+    newareal := true
+    newareal
+
+alertcondition(posdivergence >= showlimit and not showhidden, title='Positive Divergence', message='Positive Divergence')
+alertcondition(negdivergence >= showlimit and not showhidden, title='Negative Divergence', message='Negative Divergence')
+alertcondition(hposdivergence >= showlimit and showhidden, title='Positive Hidden Divergence', message='Positive Hidden Divergence')
+alertcondition(hnegdivergence >= showlimit and showhidden, title='Negative Hidden Divergence', message='Negative Hidden Divergence')
+
+
+// Variables para rastrear la última divergencia positiva y negativa
+var int last_positive_divergence = na
+var int last_negative_divergence = na
+// Actualización de las variables de divergencia
+if posdivergence >= showlimit or hposdivergence >= showlimit
+    last_positive_divergence := bar_index
+
+if negdivergence >= showlimit or hnegdivergence >= showlimit
+    last_negative_divergence := bar_index
+
+// Mantener las divergencias recientes dentro del rango de lookback
+last_positive_divergence := not na(last_positive_divergence) and bar_index - last_positive_divergence <= div_lookback ? last_positive_divergence : na
+last_negative_divergence := not na(last_negative_divergence) and bar_index - last_negative_divergence <= div_lookback ? last_negative_divergence : na
+
+
+has_recent_positive_divergence = not na(last_positive_divergence)
+has_recent_negative_divergence = not na(last_negative_divergence)
+
+
+
+
+// Función para contar condiciones opcionales cumplidas
+count_opcionales_compra = 0
+count_opcionales_venta = 0
+
+// Verifica cada indicador si está habilitado, y si está en estado "Excluyente" u "Opcional"
+compra_condiciones_excluyentes = true
+venta_condiciones_excluyentes = true
+// Absolute Strength
+if ind_absolute_strength_lines != 'Desactivado'
+    if ind_absolute_strength_lines == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and bull_lines_condition
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and bear_lines_condition
+    else if ind_absolute_strength_lines == 'Opcional'
+        count_opcionales_compra += (bull_lines_condition ? 1 : 0)
+        count_opcionales_venta += (bear_lines_condition ? 1 : 0)
+
+// Absolute Strength Histogram
+if ind_absolute_strength_histogram != 'Desactivado'
+    if ind_absolute_strength_histogram == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and bull_histogram_condition
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and bear_histogram_condition
+    else if ind_absolute_strength_histogram == 'Opcional'
+        count_opcionales_compra += (bull_histogram_condition ? 1 : 0)
+        count_opcionales_venta += (bear_histogram_condition ? 1 : 0)
+
+// SSL Channel
+if ind_ssl_channel != 'Desactivado'
+    if ind_ssl_channel == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and ssl_compra
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and ssl_venta
+    else if ind_ssl_channel == 'Opcional'
+        count_opcionales_compra += (ssl_compra ? 1 : 0)
+        count_opcionales_venta += (ssl_venta ? 1 : 0)
+
+// RSI
+if ind_rsi != 'Desactivado'
+    if ind_rsi == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and rsi_compra
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and rsi_venta
+    else if ind_rsi == 'Opcional'
+        count_opcionales_compra += (rsi_compra ? 1 : 0)
+        count_opcionales_venta += (rsi_venta ? 1 : 0)
+
+// Squeeze Momentum
+if ind_squeeze_momentum != 'Desactivado'
+    if ind_squeeze_momentum == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and sqz_momentum_compra
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and sqz_momentum_venta
+    else if ind_squeeze_momentum == 'Opcional'
+        count_opcionales_compra += (sqz_momentum_compra ? 1 : 0)
+        count_opcionales_venta += (sqz_momentum_venta ? 1 : 0)
+
+// MACD Signal
+if ind_macdSignal != 'Desactivado'
+    if ind_macdSignal == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and macd_compra
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and macd_venta
+    else if ind_macdSignal == 'Opcional'
+        count_opcionales_compra += (macd_compra ? 1 : 0)
+        count_opcionales_venta += (macd_venta ? 1 : 0)
+
+// MACD Histogram
+if ind_macdHist != 'Desactivado'
+    if ind_macdHist == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and hist_compra
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and hist_venta
+    else if ind_macdHist == 'Opcional'
+        count_opcionales_compra += (hist_compra ? 1 : 0)
+        count_opcionales_venta += (hist_venta ? 1 : 0)
+
+// EMA Conditions
+if ind_ema_conditions != 'Desactivado'
+    if ind_ema_conditions == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and por_encima_de_emas
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and por_debajo_de_emas
+    else if ind_ema_conditions == 'Opcional'
+        count_opcionales_compra += (por_encima_de_emas ? 1 : 0)
+        count_opcionales_venta += (por_debajo_de_emas ? 1 : 0)
+
+// MTF Conditions
+if ind_mtf_conditions != 'Desactivado'
+    if ind_mtf_conditions == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and mtf_compra
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and mtf_venta
+    else if ind_mtf_conditions == 'Opcional'
+        count_opcionales_compra += (mtf_compra ? 1 : 0)
+        count_opcionales_venta += (mtf_venta ? 1 : 0)
+
+// Distance EMAs
+if ind_distancia_emas != 'Desactivado'
+    if ind_distancia_emas == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and distancia_emas_valida
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and distancia_emas_valida
+    else if ind_distancia_emas == 'Opcional'
+        count_opcionales_compra += (distancia_emas_valida ? 1 : 0)
+        count_opcionales_venta += (distancia_emas_valida ? 1 : 0)
+
+// Distance SSL
+if ind_distancia_stop != 'Desactivado'
+    if ind_distancia_stop == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and distancia_stop_compra
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and distancia_stop_venta
+    else if ind_distancia_stop == 'Opcional'
+        count_opcionales_compra += (distancia_stop_compra ? 1 : 0)
+        count_opcionales_venta += (distancia_stop_venta ? 1 : 0)
+
+// Firestorm
+if ind_firestorm != 'Desactivado'
+    if ind_firestorm == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and firestorm_buy_signal
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and firestorm_sell_signal
+    else if ind_firestorm == 'Opcional'
+        count_opcionales_compra += (firestorm_buy_signal ? 1 : 0)
+        count_opcionales_venta += (firestorm_sell_signal ? 1 : 0)
+
+// WaveTrend Reversal
+if ind_wt_reversal != 'Desactivado'
+    if ind_wt_reversal == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and wt_compra
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and wt_venta
+    else if ind_wt_reversal == 'Opcional'
+        count_opcionales_compra += (wt_compra ? 1 : 0)
+        count_opcionales_venta += (wt_venta ? 1 : 0)
+
+// WaveTrend Divergence
+if ind_wt_divergence != 'Desactivado'
+    if ind_wt_divergence == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and wtdiv_compra
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and wtdiv_venta
+    else if ind_wt_divergence == 'Opcional'
+        count_opcionales_compra += (wtdiv_compra ? 1 : 0)
+        count_opcionales_venta += (wtdiv_venta ? 1 : 0)
+
+
+
+if ind_divergence != 'Desactivado'
+    if ind_divergence == 'Excluyente'
+        compra_condiciones_excluyentes := compra_condiciones_excluyentes and has_recent_positive_divergence
+        venta_condiciones_excluyentes := venta_condiciones_excluyentes and has_recent_negative_divergence
+    else if ind_divergence == 'Opcional'
+        count_opcionales_compra += (has_recent_positive_divergence ? 1 : 0)
+        count_opcionales_venta += (has_recent_negative_divergence ? 1 : 0)
+
+// Input para definir el número de condiciones opcionales necesarias
+
+// Condiciones de compra/venta finales
+condicion_compra = compra_condiciones_excluyentes and count_opcionales_compra >= num_opcionales_necesarias
+condicion_venta = venta_condiciones_excluyentes and count_opcionales_venta >= num_opcionales_necesarias
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Variables para gestionar el Stop y Take Profit
+var float stop_loss_price = na
+var float take_profit_price = na
+var float stop_adjusted_price = na
+var float trailing_stop_price = na
+var float profit_distance = na
+var bool first_take_profit_hit = false
+
+// Control para evitar apertura de nuevas posiciones si ya hay una activa
+if (strategy.position_size == 0)
+    // Estrategia de compra
+    if (condicion_compra)  // Asegura que la compra ocurre solo en tendencia alcista
+        // Calcula el Stop Loss basado en la última línea de tendencia de Firestorm
+        stop_loss_price := up * 0.996  // Calcula el Stop Loss por debajo de la línea de tendencia "dn" un 0.4%
+        profit_distance := math.abs(close - stop_loss_price) * Multiplier_profit
+        take_profit_price := close + profit_distance  // Calcula el profit en base a la distancia configurada
+        stop_adjusted_price := na
+        first_take_profit_hit := false
+        strategy.entry('Compra', strategy.long, when=condicion_compra)
+
+    // Estrategia de venta
+    if (condicion_venta)  // Asegura que la venta ocurre solo en tendencia bajista
+        // Calcula el Stop Loss basado en la última línea de tendencia de Firestorm
+        stop_loss_price := dn * 1.004  // Calcula el Stop Loss por encima de la línea de tendencia "up" un 0.4%
+        profit_distance := math.abs(close - stop_loss_price) * Multiplier_profit
+        take_profit_price := close - profit_distance  // Calcula el profit en base a la distancia configurada
+        stop_adjusted_price := na
+        first_take_profit_hit := false
+        strategy.entry('Venta', strategy.short, when=condicion_venta)
+
+// Gestión de etiquetas (órdenes del backtesting) para operaciones largas
+if (strategy.position_size > 0)  // Larga
+    // Ejecutar Stop Loss si se alcanza antes del Profit 1
+    if (low <= stop_loss_price and not first_take_profit_hit)
+        strategy.exit('SL L', 'Compra', stop=stop_loss_price)
+
+    // Ejecutar Take Profit 1 y ajustar el trailing stop
+    if (high >= take_profit_price and not first_take_profit_hit)
+        first_take_profit_hit := true
+        // Salida parcial en el Take Profit 1
+        qty_to_close = math.abs(strategy.position_size) * (profit_take_percent / 100)
+        strategy.exit('TP1 L', 'Compra', qty=qty_to_close, limit=take_profit_price)
+        // Ajusta el stop al breakeven para la posición restante
+        stop_adjusted_price := strategy.position_avg_price * breakeven_buffer
+
+    // Ejecutar Stop Adjusted al Breakeven para la posición restante en tiempo real
+    if (first_take_profit_hit and low <= stop_adjusted_price)
+        strategy.exit('Adjusted L', 'Compra', stop=stop_adjusted_price)
+
+    // Condición para Trailing Stop basado en el indicador Firestorm
+    // Utiliza first_take_profit_hit[1] para verificar si la bandera ya estaba establecida en el bar anterior
+    if (first_take_profit_hit[1])
+        if (ssl_venta)  // Usar señal contraria para cerrar posición larga
+            strategy.close('Compra', comment='Trailing L')
+
+// Gestión de etiquetas (órdenes del backtesting) para operaciones cortas
+if (strategy.position_size < 0)  // Corta
+    // Ejecutar Stop Loss si se alcanza antes del Profit 1
+    if (high >= stop_loss_price and not first_take_profit_hit)
+        strategy.exit('SL S', 'Venta', stop=stop_loss_price)
+
+    // Ejecutar Take Profit 1 y ajustar el trailing stop
+    if (low <= take_profit_price and not first_take_profit_hit)
+        first_take_profit_hit := true
+        // Salida parcial en el Take Profit 1
+        qty_to_close = math.abs(strategy.position_size) * (profit_take_percent / 100)
+        strategy.exit('TP1 S', 'Venta', qty=qty_to_close, limit=take_profit_price)
+        // Ajusta el stop al breakeven para la posición restante
+        stop_adjusted_price := strategy.position_avg_price / breakeven_buffer
+
+    // Ejecutar Stop Adjusted al Breakeven para la posición restante en tiempo real
+    if (first_take_profit_hit and high >= stop_adjusted_price)
+        strategy.exit('Adjusted S', 'Venta', stop=stop_adjusted_price)
+
+    // Condición para Trailing Stop basado en el indicador Firestorm
+    // Utiliza first_take_profit_hit[1] para verificar si la bandera ya estaba establecida en el bar anterior
+    if (first_take_profit_hit[1])
+        if (ssl_compra)  // Usar señal contraria para cerrar posición corta
+            strategy.close('Venta', comment='Trailing S')

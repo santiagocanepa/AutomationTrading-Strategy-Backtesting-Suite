@@ -1,0 +1,10 @@
+node_modules
+**/.env
+cookies.json
+.env
+Embeddings/.env
+Embeddings/envnew
+cookies
+**/envnew
+dist
+README3.md

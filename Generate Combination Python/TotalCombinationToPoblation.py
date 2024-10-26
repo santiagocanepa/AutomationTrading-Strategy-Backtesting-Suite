@@ -77,7 +77,8 @@ def split_combinations(input_file, output_dir, batch_size=200):
 
     print("Proceso completado exitosamente.")
 
-def main():
+def main():git config --global user.email "tu-email@ejemplo.com"
+
     """
     Función principal que maneja la ejecución del script.
     """

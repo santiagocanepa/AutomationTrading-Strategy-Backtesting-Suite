@@ -9,9 +9,9 @@
 Este proyecto integral de trading automatizado combina estrategias avanzadas de TradingView con scripts de Python para la generación y análisis de combinaciones de indicadores, y utiliza Puppeteer para realizar backtesting automatizado. La arquitectura modular permite una personalización extensa y una optimización eficiente de estrategias, facilitando la identificación de configuraciones rentables y la gestión de riesgos.
 
    - **🔗 Enlaces Rápidos**
-       - [Generate Combination Python](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Generate%20Combination%20Python/ReadmePythonCombinationES.md)
-       - [Puppetier Automation Backtesting](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Puppetier%20Automation%20Backtesting/ReadmePuppetierES.md)
-       - [Indicator Strategy of TradingView](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Indicator%20Strategy%20of%20TradingView/ReadmeIndicatorsES.md)
+       - [Generate Combination Python](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Generate%20Combination%20Python/README_ES.md)
+       - [Puppetier Automation Backtesting](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Puppetier%20Automation%20Backtesting/README_ES.md)
+       - [Indicator Strategy of TradingView](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Indicator%20Strategy%20of%20TradingView/README_ES.md)
 
 
 ### 🚀 Características

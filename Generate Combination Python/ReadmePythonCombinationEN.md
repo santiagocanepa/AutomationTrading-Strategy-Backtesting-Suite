@@ -1,3 +1,5 @@
+![image](https://github.com/user-attachments/assets/7dcef661-932b-4e2b-8529-2f0a2d3e16c0)
+
 # Combination Generation and Analysis for Backtesting
 
 This directory contains all the Python scripts needed to generate strategy combinations, prepare populations for backtesting, and analyze the results obtained. Each of the files and their function within the process is detailed in detail below.
@@ -46,6 +48,8 @@ Generate Combination Python/
     
     - It is recommended to refer to the notebook link in Kaggle for a detailed example of how the combinations were generated.
     - Make sure the input data and settings are correct before executing.
+      
+    - [KaggleGenerateCombination](https://www.kaggle.com/code/ivancanepa/generate-combinations)
 
 - **2. AddComillasJSONFinal.py**
 
@@ -171,6 +175,8 @@ Generate Combination Python/
      
 ### Advanced Analysis in Jupyter Notebook
 
+[Enlace de Jupyter](https://www.kaggle.com/code/ivancanepa/analysis-of-indicators-in-results/)
+
 - Once the backtesting results have been obtained and the CSV files have been generated, you can proceed to a deeper analysis using Jupyter Notebook.
 
 - **Objective**
@@ -180,6 +186,8 @@ Generate Combination Python/
 - **Methodology**
 
   - Use net profit as the main metric. Although this is not usually relevant, and what matters most is the profit factor and the number of trades made, in this particular case, given that all strategies were tested with the same initial capital, the Net Profit variable synthesizes well the combination of these two. Analyze the effectiveness of each indicator when it appears in optional mode, in order to isolate its impact. Introduce the entropy of each combination to consider the interdependence between indicators.
+
+  - ![image](https://github.com/user-attachments/assets/57577ab5-040c-4f06-8053-88619af3302c)
 
 - **Steps**
 

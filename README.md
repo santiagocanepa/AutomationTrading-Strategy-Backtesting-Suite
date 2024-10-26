@@ -102,8 +102,8 @@ AutomationTrading-Strategy-Backtesting-Suite/
    - **📝 Pasos de Instalación**
        - Clonar el Repositorio
            ```
-           git clone https://github.com/santiagocanepa/mi-proyecto-trading.git
-           cd mi-proyecto-trading
+           git clone https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite.git
+           cd AutomationTrading-Strategy-Backtesting-Suite
            ```
        - Configurar cada Componente
            - Generación y Análisis de Combinaciones (Python)

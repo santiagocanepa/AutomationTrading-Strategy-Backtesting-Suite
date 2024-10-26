@@ -1,3 +1,4 @@
+![image](https://github.com/user-attachments/assets/7dcef661-932b-4e2b-8529-2f0a2d3e16c0)
 
 # Generación y Análisis de Combinaciones para Backtesting
 
@@ -47,7 +48,8 @@ Generate Combination Python/
 
         - Se recomienda consultar el enlace al notebook en Kaggle para ver un ejemplo detallado de cómo se generaron las combinaciones.
         - Asegúrese de que los datos de entrada y las configuraciones sean correctas antes de ejecutar.
-
+        - [KaggleGenerateCombination](https://www.kaggle.com/code/ivancanepa/generate-combinations)
+          
 - **2. AddComillasJSONFinal.py**
 
     - Este script agrega las comillas necesarias al archivo JSON generado por el notebook anterior para asegurar su correcta interpretación por el script de Puppeteer.
@@ -172,6 +174,7 @@ Generate Combination Python/
 
 ### Análisis Avanzado en Jupyter Notebook
 
+- [Enlace de Jupyter](https://www.kaggle.com/code/ivancanepa/analysis-of-indicators-in-results/)
 - Una vez obtenidos los resultados del backtesting y generados los archivos CSV, se puede proceder a un análisis más profundo utilizando Jupyter Notebook.
 
 - **Objetivo**
@@ -181,6 +184,8 @@ Generate Combination Python/
 - **Metodología**
 
     - Utilizar el beneficio neto como métrica principal. Si bien este no suele ser relevante, y lo que mas nos importa es el factor de ganancia y el numero de operaciones realizadas, en este caso en particular, dado que todas las estrategias se probaron con el mismo capital inicial la variable Beneficio Neto sintetiza bien la combinación de estas dos. Analizar la eficacia de cada indicador cuando aparece en modo opcional, para aislar su impacto. Introducir la entropía de cada combinación para considerar la interdependencia entre indicadores.
+
+    - ![image](https://github.com/user-attachments/assets/57577ab5-040c-4f06-8053-88619af3302c)
 
 - **Pasos**
 

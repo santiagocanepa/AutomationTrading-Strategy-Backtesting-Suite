@@ -10,7 +10,7 @@ Este proyecto integral de trading automatizado combina estrategias avanzadas de 
 
    - **🔗 Enlaces Rápidos**
        - [Generate Combination Python](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Generate%20Combination%20Python/README_ES.md)
-       - [Puppetier Automation Backtesting](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Puppetier%20Automation%20Backtesting/README_ES.md)
+       - [Puppetier Automation Backtesting](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Puppeteer%20Automation%20Backtesting/README_ES.md)
        - [Indicator Strategy of TradingView](https://github.com/santiagocanepa/AutomationTrading-Strategy-Backtesting-Suite/blob/main/Indicator%20Strategy%20of%20TradingView/README_ES.md)
 
 

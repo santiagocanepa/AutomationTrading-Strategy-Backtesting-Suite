@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/7dcef661-932b-4e2b-8529-2f0a2d3e16c0)
+![image](https://github.com/user-attachments/assets/bf8944bd-6468-4293-92bb-e9bd2cb4d225)
 
 # Generación y Análisis de Combinaciones para Backtesting
 
@@ -185,7 +185,7 @@ Generate Combination Python/
 
     - Utilizar el beneficio neto como métrica principal. Si bien este no suele ser relevante, y lo que mas nos importa es el factor de ganancia y el numero de operaciones realizadas, en este caso en particular, dado que todas las estrategias se probaron con el mismo capital inicial la variable Beneficio Neto sintetiza bien la combinación de estas dos. Analizar la eficacia de cada indicador cuando aparece en modo opcional, para aislar su impacto. Introducir la entropía de cada combinación para considerar la interdependencia entre indicadores.
 
-    - ![image](https://github.com/user-attachments/assets/57577ab5-040c-4f06-8053-88619af3302c)
+    - ![image](https://github.com/user-attachments/assets/2f6711e3-a6f9-4e9c-83f8-1f6fae044e47)
 
 - **Pasos**
 

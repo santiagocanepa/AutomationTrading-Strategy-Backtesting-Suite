@@ -1,7 +1,7 @@
 
 ### 📊 Visualizaciones
 ![image](https://github.com/user-attachments/assets/b010edf3-5c6f-4c78-9410-bbe50daf1c42)
-![image](https://github.com/user-attachments/assets/2a7682c4-7e62-4de4-95bf-d6b171b061d0)
+![image](https://github.com/user-attachments/assets/a2c2bcb7-57b1-437f-ae41-f87ae1348f32)
 ![image](https://github.com/user-attachments/assets/8a423216-0c8e-4e37-86bb-aacafb8d35f3)
 ![image](https://github.com/user-attachments/assets/39c03c50-b0b7-42fb-b6ed-0861bab68386)
 

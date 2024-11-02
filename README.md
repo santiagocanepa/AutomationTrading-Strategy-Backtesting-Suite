@@ -1,6 +1,6 @@
 ### 📊 Visualizations
 ![image](https://github.com/user-attachments/assets/b010edf3-5c6f-4c78-9410-bbe50daf1c42)
-![image](https://github.com/user-attachments/assets/a2c2bcb7-57b1-437f-ae41-f87ae1348f32)
+![image](https://github.com/user-attachments/assets/9553eb5f-d0ba-485a-99c0-e7f8f2a994f9)
 ![image](https://github.com/user-attachments/assets/8a423216-0c8e-4e37-86bb-aacafb8d35f3)
 ![image](https://github.com/user-attachments/assets/39c03c50-b0b7-42fb-b6ed-0861bab68386)
 

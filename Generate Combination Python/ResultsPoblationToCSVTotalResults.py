@@ -5,29 +5,30 @@ import glob
 
 def clean_numeric_value(value):
     if isinstance(value, str):
-        # Reemplazar el signo negativo especial si existe
+        # Replace special negative sign if it exists
         value = value.replace('−', '-').strip()
         
-        # Eliminar unidades monetarias y otros sufijos comunes, incluyendo '%'
+        # Remove monetary units and other common suffixes, including '%'
         suffixes = [' USD', 'USDT', ' usd', 'usdt', '%']
         for suffix in suffixes:
             if value.endswith(suffix):
                 value = value[:-len(suffix)]
-                break  # Asumimos solo un sufijo por valor
+                break  # Assume only one suffix per value
         
-        # Eliminar separadores de miles (puntos)
+        # Remove thousand separators (dots)
         value = value.replace('.', '')
         
-        # Reemplazar la coma decimal por un punto
+        # Replace decimal comma with a dot
         value = value.replace(',', '.')
         
         try:
             return float(value)
         except ValueError:
-            print(f"Error al convertir el valor: {value}")
+            print(f"Error converting value: {value}")
             return None
     return value
-# Lista de rutas a los directorios que contienen las carpetas "results"
+
+# List of paths to directories containing the "results" folders
 directories = [
     '/home/santiago/Bots/tradingview/Sol/Results',
     '/home/santiago/Bots/tradingview/Sol1/Results',
@@ -37,14 +38,12 @@ directories = [
     '/home/santiago/Bots/tradingview/Sol1Diaria/Results'
     '/home/santiago/Bots/tradingview/Sol2Diaria/Results'
     '/home/santiago/Bots/tradingview/Sol3Diaria/Results'
-
-
 ]
 
 data = []
 
 for dir_path in directories:
-    # Usar glob para encontrar todos los archivos .json en la carpeta "results"
+    # Use glob to find all .json files in the "results" folder
     json_files = glob.glob(os.path.join(dir_path, '*.json'))
     
     for file in json_files:
@@ -52,53 +51,53 @@ for dir_path in directories:
             try:
                 json_data = json.load(f)
             except json.JSONDecodeError as e:
-                print(f"Error al leer {file}: {e}")
-                continue  # Salta al siguiente archivo si hay un error
+                print(f"Error reading {file}: {e}")
+                continue  # Skip to the next file if there's an error
             
             for combination_key, combination_value in json_data.items():
-                # Extraer el nombre desde combination['name']
+                # Extract the name from combination['name']
                 name = combination_value.get('name', None)
                 
-                # Extraer indicadores
+                # Extract indicators
                 indicators = combination_value.get('combination', {}).get('indicators', {})
                 
-                # Extraer gestión de riesgo
+                # Extract risk management
                 risk_management = combination_value.get('combination', {}).get('riskManagement', {})
                 
-                # Extraer requisitos
+                # Extract requirements
                 requires = combination_value.get('combination', {}).get('requires', {})
                 
-                # Extraer resultados
+                # Extract results
                 result = combination_value.get('result', {})
                 
-                # Limpiar los valores numéricos en 'result'
+                # Clean numeric values in 'result'
                 for key in result:
                     result[key] = clean_numeric_value(result[key])
                 
-                # Construir un diccionario plano
+                # Build a flat dictionary
                 row = {
                     'name': name
                 }
                 
-                # Añadir indicadores al diccionario
+                # Add indicators to the dictionary
                 row.update(indicators)
                 
-                # Añadir gestión de riesgo
+                # Add risk management
                 row.update(risk_management)
                 
-                # Añadir requisitos
+                # Add requirements
                 row.update(requires)
                 
-                # Añadir resultados
+                # Add results
                 row.update(result)
                 
-                # Añadir la fila a la lista de datos
+                # Add the row to the data list
                 data.append(row)
 
-# Crear el DataFrame
+# Create the DataFrame
 df = pd.DataFrame(data)
 
-# Definir el orden de las columnas
+# Define the order of the columns
 column_order = [
     'name',
     'Activar Absolute Strength (Histograma)',
@@ -125,11 +124,11 @@ column_order = [
     'Prom. barras en operaciones'
 ]
 
-# Reordenar las columnas si existen en el DataFrame
+# Reorder the columns if they exist in the DataFrame
 existing_columns = [col for col in column_order if col in df.columns]
 df = df[existing_columns]
 
-# Guardar el DataFrame en un archivo CSV
+# Save the DataFrame to a CSV file
 output_csv = 'resultadosSOL4H.csv'
 df.to_csv(output_csv, index=False, encoding='utf-8-sig')
-print(f"CSV unificado guardado como {output_csv}")
+print(f"Unified CSV saved as {output_csv}")

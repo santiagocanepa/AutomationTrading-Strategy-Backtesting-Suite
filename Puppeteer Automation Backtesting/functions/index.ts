@@ -12,5 +12,4 @@ async function start() {
     }
 }
 
-// Iniciar el proceso
 start();

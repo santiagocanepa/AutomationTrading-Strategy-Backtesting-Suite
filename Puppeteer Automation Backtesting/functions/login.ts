@@ -30,12 +30,9 @@ async function manualLogin (page: Page): Promise<void> {
 }
 
 async function isLogin (page: Page): Promise<void> {
-  // Verifica si el archivo de cookies existe
   if (existsSync(paths.cookiesPath)) {
     console.log('Archivo de cookies encontrado.')
-    // Si existe el archivo, simplemente retorna
   } else {
-    // Si no existe el archivo, llama a manualLogin
     await manualLogin(page)
   }
 }

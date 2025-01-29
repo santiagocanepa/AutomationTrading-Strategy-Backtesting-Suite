@@ -103,7 +103,6 @@ function generateTimeframeCombinations(timeframes: TimeframeOption[]): Timeframe
   return results;
 }
 
-// Ejemplo de uso dentro del módulo
 const indicators: Indicator[] = [
   { name: 'Absolute Strength', mode: 'Opcional' },
   { name: 'MACD', mode: 'Opcional', hasTimeframes: true },

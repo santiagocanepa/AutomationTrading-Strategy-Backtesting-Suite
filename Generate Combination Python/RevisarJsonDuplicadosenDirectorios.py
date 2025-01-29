@@ -1,22 +1,21 @@
 import os
 
-# Directorios a verificar
+# Directories to check
 directorios = [
     '/home/santiago/Bots/tradingview/Sol/Results',
     '/home/santiago/Bots/tradingview/Sol1/Results',
     '/home/santiago/Bots/tradingview/Sol2/Results',
     '/home/santiago/Bots/tradingview/Sol3/Results'
-
 ]
 
-# Función para obtener los nombres de archivos JSON de un directorio
+# Function to get JSON file names from a directory
 def obtener_archivos_json(directorio):
     return [archivo for archivo in os.listdir(directorio) if archivo.endswith('.json')]
 
-# Diccionario para almacenar los archivos encontrados
+# Dictionary to store the found files
 archivos_json = {}
 
-# Llenar el diccionario con los archivos de cada directorio
+# Fill the dictionary with files from each directory
 for directorio in directorios:
     try:
         archivos_en_directorio = obtener_archivos_json(directorio)
@@ -26,16 +25,16 @@ for directorio in directorios:
             else:
                 archivos_json[archivo] = [directorio]
     except FileNotFoundError:
-        print(f"El directorio {directorio} no fue encontrado.")
+        print(f"The directory {directorio} was not found.")
     except PermissionError:
-        print(f"No tienes permisos para acceder al directorio {directorio}.")
+        print(f"You do not have permission to access the directory {directorio}.")
 
-# Verificar duplicados
+# Check for duplicates
 duplicados = {archivo: dirs for archivo, dirs in archivos_json.items() if len(dirs) > 1}
 
 if duplicados:
-    print("Se encontraron archivos JSON duplicados en múltiples directorios:")
+    print("Duplicate JSON files found in multiple directories:")
     for archivo, dirs in duplicados.items():
-        print(f"Archivo {archivo} encontrado en los directorios: {', '.join(dirs)}")
+        print(f"File {archivo} found in directories: {', '.join(dirs)}")
 else:
-    print("No se encontraron archivos JSON duplicados.")
+    print("No duplicate JSON files found.")

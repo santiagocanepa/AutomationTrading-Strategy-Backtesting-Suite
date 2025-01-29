@@ -2,10 +2,10 @@ import pandas as pd
 import os
 
 def limpiar_csv(csv_path, csv_output_path):
-    # Leer el archivo CSV
+    # Read the CSV file
     df = pd.read_csv(csv_path)
 
-    # Definir las columnas de resultados
+    # Define the result columns
     result_columns = [
         'Beneficio neto',
         'Total operaciones cerradas',
@@ -14,39 +14,39 @@ def limpiar_csv(csv_path, csv_output_path):
         'Prom. barras en operaciones'
     ]
 
-    # Asegurarse de que las columnas de resultados existen en el DataFrame
+    # Ensure that the result columns exist in the DataFrame
     for col in result_columns:
         if col not in df.columns:
-            raise ValueError(f"La columna '{col}' no se encuentra en el archivo CSV.")
+            raise ValueError(f"The column '{col}' is not found in the CSV file.")
 
-    # Crear una nueva columna que indique si las columnas de resultados tienen datos
-    # 1 si alguna de las columnas de resultados tiene datos, 0 si todas están vacías
+    # Create a new column indicating if the result columns have data
+    # 1 if any of the result columns have data, 0 if all are empty
     df['Tiene_Resultados'] = df[result_columns].notnull().any(axis=1) & (df[result_columns].astype(str).apply(lambda x: x.str.strip()).ne('')).any(axis=1)
 
-    # Ordenar el DataFrame de modo que las filas con resultados aparezcan primero
+    # Sort the DataFrame so that rows with results appear first
     df_sorted = df.sort_values(by=['name', 'Tiene_Resultados'], ascending=[True, False])
 
-    # Eliminar duplicados, manteniendo la primera aparición (que tiene resultados si existen)
+    # Remove duplicates, keeping the first occurrence (which has results if they exist)
     df_deduplicated = df_sorted.drop_duplicates(subset='name', keep='first')
 
-    # Eliminar la columna auxiliar
+    # Remove the auxiliary column
     df_deduplicated = df_deduplicated.drop(columns=['Tiene_Resultados'])
 
-    # Guardar el DataFrame limpio en un nuevo CSV
+    # Save the cleaned DataFrame to a new CSV
     df_deduplicated.to_csv(csv_output_path, index=False, encoding='utf-8-sig')
 
-    print(f"Archivo CSV limpio guardado en: {csv_output_path}")
+    print(f"Clean CSV file saved at: {csv_output_path}")
 
 if __name__ == "__main__":
-    # Definir las rutas de los archivos
-    csv_path = '/home/santiago/Bots/tradingview/Modelo Evolutivo/resultadosSOL4H.csv'          # Reemplaza con la ruta de tu archivo CSV original
-    csv_output_path = '/home/santiago/Bots/tradingview/Modelo Evolutivo/resultadosSOL4HFinal.csv'  # Reemplaza con la ruta deseada para el CSV limpio
+    # Define the file paths
+    csv_path = '/home/santiago/Bots/tradingview/Modelo Evolutivo/resultadosSOL4H.csv'          # Replace with the path to your original CSV file
+    csv_output_path = '/home/santiago/Bots/tradingview/Modelo Evolutivo/resultadosSOL4HFinal.csv'  # Replace with the desired path for the cleaned CSV
 
-    # Verificar que el archivo CSV original existe
+    # Check that the original CSV file exists
     if not os.path.isfile(csv_path):
-        print(f"El archivo CSV en la ruta {csv_path} no existe.")
+        print(f"The CSV file at {csv_path} does not exist.")
     else:
         try:
             limpiar_csv(csv_path, csv_output_path)
         except Exception as e:
-            print(f"Ocurrió un error: {e}")
+            print(f"An error occurred: {e}")

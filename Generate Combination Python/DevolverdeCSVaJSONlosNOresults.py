@@ -3,10 +3,10 @@ import json
 import os
 
 def csv_to_filtered_json(csv_path, json_output_path):
-    # Leer el archivo CSV
+    # Read the CSV file
     df = pd.read_csv(csv_path)
 
-    # Definir las columnas de resultados que deben estar vacías
+    # Define the result columns that must be empty
     result_columns = [
         'Beneficio neto',
         'Total operaciones cerradas',
@@ -15,20 +15,20 @@ def csv_to_filtered_json(csv_path, json_output_path):
         'Prom. barras en operaciones'
     ]
 
-    # Filtrar filas donde todas las columnas de resultados están vacías
-    # Consideramos vacías tanto si son NaN como si son cadenas vacías
+    # Filter rows where all result columns are empty
+    # We consider empty both NaN and empty strings
     filtered_df = df[df[result_columns].isnull().all(axis=1) | (df[result_columns] == '').all(axis=1)]
 
-    # Alternativamente, si quieres filas donde **cualquier** de las columnas está vacía:
+    # Alternatively, if you want rows where **any** of the columns is empty:
     # filtered_df = df[df[result_columns].isnull().any(axis=1) | (df[result_columns] == '').any(axis=1)]
 
-    # Crear el diccionario para el JSON
+    # Create the dictionary for the JSON
     json_dict = {}
 
     for index, row in filtered_df.iterrows():
         name = row['name']
 
-        # Construir el diccionario de indicadores
+        # Build the indicators dictionary
         indicators = {
             'Activar Absolute Strength (Histograma)': row['Activar Absolute Strength (Histograma)'],
             'Activar SSL Channel': row['Activar SSL Channel'],
@@ -46,38 +46,38 @@ def csv_to_filtered_json(csv_path, json_output_path):
             'Activar Divergencia': row['Activar Divergencia']
         }
 
-        # Construir el diccionario de riskManagement
+        # Build the riskManagement dictionary
         risk_management = {
             'Porcentaje de toma de ganancias': row['Porcentaje de toma de ganancias'],
             'Multiplier for Take Profit': row['Multiplier for Take Profit']
         }
 
-        # Construir el diccionario de requires
+        # Build the requires dictionary
         requires = {
             'Número de Indicadores Opcionales requeridos': row['Número de Indicadores Opcionales requeridos']
         }
 
-        # Asignar al diccionario principal usando el nombre como clave
+        # Assign to the main dictionary using the name as the key
         json_dict[name] = {
             'indicators': indicators,
             'riskManagement': risk_management,
             'requires': requires
         }
 
-    # Guardar el diccionario como JSON
+    # Save the dictionary as JSON
     with open(json_output_path, 'w', encoding='utf-8') as json_file:
         json.dump(json_dict, json_file, ensure_ascii=False, indent=2)
 
-    print(f"JSON filtrado guardado en {json_output_path}")
+    print(f"Filtered JSON saved at {json_output_path}")
 
-# Uso del script
+# Script usage
 if __name__ == "__main__":
-    # Define las rutas de tus archivos
-    csv_path = '/home/santiago/Bots/tradingview/Modelo Evolutivo/resultadosSOL4H.csv'  # Reemplaza con la ruta de tu archivo CSV
-    json_output_path = '/home/santiago/Bots/tradingview/Modelo Evolutivo/resultados_filtrados.json'  # Reemplaza con la ruta donde quieres guardar el JSON
+    # Define your file paths
+    csv_path = '/home/santiago/Bots/tradingview/Modelo Evolutivo/resultadosSOL4H.csv'  # Replace with the path to your CSV file
+    json_output_path = '/home/santiago/Bots/tradingview/Modelo Evolutivo/resultados_filtrados.json'  # Replace with the path where you want to save the JSON
 
-    # Verificar que el archivo CSV existe
+    # Check that the CSV file exists
     if not os.path.isfile(csv_path):
-        print(f"El archivo CSV en la ruta {csv_path} no existe.")
+        print(f"The CSV file at {csv_path} does not exist.")
     else:
         csv_to_filtered_json(csv_path, json_output_path)

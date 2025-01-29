@@ -13,10 +13,9 @@ interface CombinationData {
 }
 
 export async function main(): Promise<void> {
-    while (true) {  // Bucle infinito para repetir el proceso hasta que se detenga manualmente
+    while (true) {  
         const { browser, page } = await init();
 
-        // Obtener la nueva población a procesar
         const { poblacionFileName, poblacionData, resultFileName } = await nuevaPoblacion();
 
         if (!poblacionData) {
@@ -25,20 +24,18 @@ export async function main(): Promise<void> {
             break;
         }
 
-        // Procesar combinaciones
         for (const [combinationId, combinationData] of Object.entries(poblacionData)) {
             const data = combinationData as CombinationData;  // Asegurar el tipo
             await getHumanizedWaitTime (1700,2500)
 
             const result = await performBacktesting(page as Page, data);
 
-            // Guardar los resultados en el archivo JSON inmediatamente después de cada backtesting
             await appendResultToFile({
                 id: combinationId,
-                name: data.name,  // Pasar el nombre de la combinación
+                name: data.name,  
                 combination: data,
                 result,
-                jsonFileName: resultFileName  // Pasar el nombre del archivo JSON de resultados
+                jsonFileName: resultFileName  
             });
 
         }

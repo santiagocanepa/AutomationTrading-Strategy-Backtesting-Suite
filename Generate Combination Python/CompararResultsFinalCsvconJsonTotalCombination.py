@@ -4,21 +4,21 @@ import os
 
 def cargar_nombres_csv(csv_path):
     """
-    Carga la columna 'name' del archivo CSV y devuelve un conjunto de nombres.
+    Loads the 'name' column from the CSV file and returns a set of names.
     """
     try:
         df = pd.read_csv(csv_path)
         if 'name' not in df.columns:
-            raise ValueError("La columna 'name' no se encuentra en el archivo CSV.")
+            raise ValueError("The 'name' column is not found in the CSV file.")
         nombres_csv = set(df['name'].dropna().astype(str).str.strip())
         return nombres_csv
     except Exception as e:
-        print(f"Error al leer el archivo CSV: {e}")
+        print(f"Error reading the CSV file: {e}")
         return set()
 
 def cargar_claves_json(json_path):
     """
-    Carga las claves principales del archivo JSON y devuelve un conjunto de claves.
+    Loads the main keys from the JSON file and returns a set of keys.
     """
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
@@ -26,13 +26,13 @@ def cargar_claves_json(json_path):
         claves_json = set(data.keys())
         return claves_json
     except Exception as e:
-        print(f"Error al leer el archivo JSON: {e}")
+        print(f"Error reading the JSON file: {e}")
         return set()
 
 def comparar_combinaciones(nombres_csv, claves_json):
     """
-    Compara los conjuntos de nombres del CSV y claves del JSON.
-    Retorna dos conjuntos: faltantes en CSV y extras en CSV.
+    Compares the sets of names from the CSV and keys from the JSON.
+    Returns two sets: missing in CSV and extra in CSV.
     """
     faltantes_en_csv = claves_json - nombres_csv
     extras_en_csv = nombres_csv - claves_json
@@ -40,73 +40,73 @@ def comparar_combinaciones(nombres_csv, claves_json):
 
 def guardar_resultados(faltantes, extras, output_dir):
     """
-    Guarda los resultados de la comparación en archivos de texto.
+    Saves the comparison results in text files.
     """
     try:
         os.makedirs(output_dir, exist_ok=True)
         
-        # Guardar faltantes
+        # Save missing
         with open(os.path.join(output_dir, 'faltantes_en_csv.txt'), 'w', encoding='utf-8') as f:
             if faltantes:
-                f.write("Combinaciones en JSON que faltan en CSV:\n")
+                f.write("Combinations in JSON that are missing in CSV:\n")
                 for combo in sorted(faltantes):
                     f.write(f"{combo}\n")
             else:
-                f.write("No hay combinaciones faltantes en el CSV.\n")
+                f.write("There are no missing combinations in the CSV.\n")
         
-        # Guardar extras
+        # Save extras
         with open(os.path.join(output_dir, 'extras_en_csv.txt'), 'w', encoding='utf-8') as f:
             if extras:
-                f.write("Nombres en CSV que no existen en JSON:\n")
+                f.write("Names in CSV that do not exist in JSON:\n")
                 for nombre in sorted(extras):
                     f.write(f"{nombre}\n")
             else:
-                f.write("No hay nombres extra en el CSV.\n")
+                f.write("There are no extra names in the CSV.\n")
         
-        print(f"Resultados guardados en el directorio: {output_dir}")
+        print(f"Results saved in the directory: {output_dir}")
     except Exception as e:
-        print(f"Error al guardar los resultados: {e}")
+        print(f"Error saving the results: {e}")
 
 def main():
-    # Definir las rutas de los archivos
-    csv_path = '/home/santiago/Bots/tradingview/Modelo Evolutivo/resultadosSOL4HFinal.csv'      # Reemplaza con la ruta de tu archivo CSV
-    json_path = '/home/santiago/Bots/tradingview/Modelo Evolutivo/final_combinations1.json'    # Reemplaza con la ruta de tu archivo JSON
-    output_dir = '/home/santiago/Bots/tradingview/Modelo Evolutivo/comparation.json'     # Reemplaza con la ruta donde deseas guardar los resultados
+    # Define the file paths
+    csv_path = '/home/santiago/Bots/tradingview/Modelo Evolutivo/resultadosSOL4HFinal.csv'      # Replace with the path to your CSV file
+    json_path = '/home/santiago/Bots/tradingview/Modelo Evolutivo/final_combinations1.json'    # Replace with the path to your JSON file
+    output_dir = '/home/santiago/Bots/tradingview/Modelo Evolutivo/comparation.json'     # Replace with the path where you want to save the results
     
-    # Verificar que los archivos existen
+    # Check that the files exist
     if not os.path.isfile(csv_path):
-        print(f"El archivo CSV en la ruta {csv_path} no existe.")
+        print(f"The CSV file at {csv_path} does not exist.")
         return
     if not os.path.isfile(json_path):
-        print(f"El archivo JSON en la ruta {json_path} no existe.")
+        print(f"The JSON file at {json_path} does not exist.")
         return
     
-    # Cargar los nombres del CSV y las claves del JSON
+    # Load the names from the CSV and the keys from the JSON
     nombres_csv = cargar_nombres_csv(csv_path)
     claves_json = cargar_claves_json(json_path)
     
-    # Comparar las combinaciones
+    # Compare the combinations
     faltantes, extras = comparar_combinaciones(nombres_csv, claves_json)
     
-    # Mostrar resultados en la consola
-    print("\n=== Resultados de la Comparación ===\n")
+    # Display results on the console
+    print("\n=== Comparison Results ===\n")
     if faltantes:
-        print("Combinaciones en JSON que faltan en CSV:")
+        print("Combinations in JSON that are missing in CSV:")
         for combo in sorted(faltantes):
             print(f"- {combo}")
     else:
-        print("No hay combinaciones faltantes en el CSV.")
+        print("There are no missing combinations in the CSV.")
     
     print("\n------------------------------------\n")
     
     if extras:
-        print("Nombres en CSV que no existen en JSON:")
+        print("Names in CSV that do not exist in JSON:")
         for nombre in sorted(extras):
             print(f"- {nombre}")
     else:
-        print("No hay nombres extra en el CSV.")
+        print("There are no extra names in the CSV.")
     
-    # Guardar los resultados en archivos de texto
+    # Save the results in text files
     guardar_resultados(faltantes, extras, output_dir)
 
 if __name__ == "__main__":

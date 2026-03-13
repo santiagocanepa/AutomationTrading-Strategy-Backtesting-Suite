@@ -1,0 +1,183 @@
+"""Tests for risk archetypes — each archetype builds a valid RiskConfig."""
+
+from __future__ import annotations
+
+import pytest
+
+from suitetrading.config.archetypes import (
+    ARCHETYPE_INDICATORS,
+    get_combination_mode,
+    get_entry_indicators,
+)
+from suitetrading.risk.archetypes import ARCHETYPE_REGISTRY, get_archetype
+from suitetrading.risk.archetypes.base import RiskArchetype
+from suitetrading.risk.archetypes.legacy import LegacyFirestormProfile, fibonacci_weights
+from suitetrading.risk.contracts import RiskConfig
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Registry
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestRegistry:
+    def test_all_six_registered(self):
+        expected = {
+            "legacy_firestorm", "trend_following", "mean_reversion",
+            "mixed", "pyramidal", "grid_dca", "momentum", "breakout",
+        }
+        assert set(ARCHETYPE_REGISTRY.keys()) == expected
+
+    def test_get_archetype_returns_correct_type(self):
+        for name, cls in ARCHETYPE_REGISTRY.items():
+            instance = get_archetype(name)
+            assert isinstance(instance, cls)
+
+    def test_get_archetype_unknown_raises(self):
+        with pytest.raises(ValueError, match="Unknown archetype"):
+            get_archetype("nonexistent")
+
+
+class TestIndicatorArchetypeConfig:
+    """Tests for config/archetypes.py — indicator mapping."""
+
+    def test_all_indicator_archetypes_have_risk_archetype(self):
+        for name in ARCHETYPE_INDICATORS:
+            assert name in ARCHETYPE_REGISTRY, f"'{name}' lacks a risk archetype"
+
+    def test_mixed_uses_majority(self):
+        mode, threshold = get_combination_mode("mixed")
+        assert mode == "majority"
+        assert threshold == 2
+
+    def test_trend_following_uses_excluyente(self):
+        mode, threshold = get_combination_mode("trend_following")
+        assert mode == "excluyente"
+        assert threshold is None
+
+    def test_momentum_has_three_entry_indicators(self):
+        assert len(get_entry_indicators("momentum")) == 3
+
+    def test_breakout_has_three_entry_indicators(self):
+        assert len(get_entry_indicators("breakout")) == 3
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Every archetype builds valid RiskConfig
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestAllArchetypesBuildConfig:
+    @pytest.mark.parametrize("name", list(ARCHETYPE_REGISTRY.keys()))
+    def test_builds_valid_config(self, name: str):
+        arch = get_archetype(name)
+        cfg = arch.build_config()
+        assert isinstance(cfg, RiskConfig)
+        assert cfg.archetype == name
+
+    @pytest.mark.parametrize("name", list(ARCHETYPE_REGISTRY.keys()))
+    def test_overrides_apply(self, name: str):
+        arch = get_archetype(name)
+        cfg = arch.build_config(initial_capital=99_999.0)
+        assert cfg.initial_capital == pytest.approx(99_999.0)
+
+    @pytest.mark.parametrize("name", list(ARCHETYPE_REGISTRY.keys()))
+    def test_nested_overrides(self, name: str):
+        arch = get_archetype(name)
+        cfg = arch.build_config(sizing={"risk_pct": 2.5})
+        assert cfg.sizing.risk_pct == pytest.approx(2.5)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Legacy Firestorm specifics
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestLegacyFirestorm:
+    def test_direction_long_only(self):
+        cfg = LegacyFirestormProfile().build_config()
+        assert cfg.direction == "long"
+
+    def test_sizing_5pct(self):
+        cfg = LegacyFirestormProfile().build_config()
+        assert cfg.sizing.risk_pct == pytest.approx(5.0)
+
+    def test_be_buffer(self):
+        cfg = LegacyFirestormProfile().build_config()
+        assert cfg.break_even.buffer == pytest.approx(1.0007)
+
+    def test_partial_tp_35pct(self):
+        cfg = LegacyFirestormProfile().build_config()
+        assert cfg.partial_tp.close_pct == pytest.approx(35.0)
+
+    def test_pyramid_3_adds_fibonacci(self):
+        cfg = LegacyFirestormProfile().build_config()
+        assert cfg.pyramid.max_adds == 3
+        assert cfg.pyramid.weighting == "fibonacci"
+
+    def test_stop_model_signal(self):
+        cfg = LegacyFirestormProfile().build_config()
+        assert cfg.stop.model == "signal"
+
+    def test_trailing_model_signal(self):
+        cfg = LegacyFirestormProfile().build_config()
+        assert cfg.trailing.model == "signal"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Fibonacci weights helper
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestFibonacciWeights:
+    def test_three_orders(self):
+        w = fibonacci_weights(3)
+        assert len(w) == 3
+        assert w == pytest.approx([0.25, 0.25, 0.50])
+
+    def test_sums_to_one(self):
+        for n in range(1, 8):
+            w = fibonacci_weights(n)
+            assert sum(w) == pytest.approx(1.0)
+
+    def test_zero_returns_empty(self):
+        assert fibonacci_weights(0) == []
+
+    def test_one_order(self):
+        assert fibonacci_weights(1) == pytest.approx([1.0])
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Archetype-specific values
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestTrendFollowing:
+    def test_risk_pct(self):
+        cfg = get_archetype("trend_following").build_config()
+        assert cfg.sizing.risk_pct == pytest.approx(0.5)
+
+    def test_pyramid_enabled(self):
+        cfg = get_archetype("trend_following").build_config()
+        assert cfg.pyramid.enabled is True
+        assert cfg.pyramid.max_adds == 3
+
+
+class TestMeanReversion:
+    def test_no_pyramid(self):
+        cfg = get_archetype("mean_reversion").build_config()
+        assert cfg.pyramid.enabled is False
+
+    def test_time_exit_enabled(self):
+        cfg = get_archetype("mean_reversion").build_config()
+        assert cfg.time_exit.enabled is True
+
+
+class TestGridDCA:
+    def test_high_pyramid_adds(self):
+        cfg = get_archetype("grid_dca").build_config()
+        assert cfg.pyramid.max_adds == 8
+
+    def test_full_tp_close(self):
+        cfg = get_archetype("grid_dca").build_config()
+        assert cfg.partial_tp.close_pct == pytest.approx(100.0)

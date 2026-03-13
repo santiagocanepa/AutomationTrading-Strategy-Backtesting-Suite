@@ -1,0 +1,82 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "suitetrading"
+version = "0.1.0"
+description = "Professional algorithmic trading suite: vectorized backtesting, risk management, and live execution"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "TA-Lib>=0.4.28",
+    "numba>=0.59",
+    "pydantic>=2.5",
+    "pydantic-settings>=2.1",
+    "polars>=0.20",
+    "pyarrow>=14",
+    "loguru>=0.7",
+    "optuna>=3.5",
+    "scikit-learn>=1.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "pytest-asyncio>=0.23",
+    "pytest-benchmark>=4.0",
+    "ruff>=0.3",
+    "mypy>=1.7",
+]
+data = [
+    "ccxt>=4.2",
+    "httpx>=0.27",
+    "tqdm>=4.66",
+    "alpaca-py>=0.43",
+]
+optimization = [
+    "optuna>=3.5",
+    "scikit-learn>=1.4",
+    "deap>=1.4",
+    "arch>=7.0",
+    "xgboost>=2.0",
+    "shap>=0.44",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/suitetrading"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "slow: Tests that hit external APIs or do heavy I/O (deselect with -m 'not slow')",
+    "integration: End-to-end pipeline tests",
+    "benchmark: Performance benchmarks",
+]
+pythonpath = ["src"]
+addopts = "-v --tb=short"

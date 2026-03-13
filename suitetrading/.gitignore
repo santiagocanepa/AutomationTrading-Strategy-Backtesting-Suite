@@ -1,0 +1,74 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Data files (downloaded/generated — not tracked)
+data/raw/
+data/processed/
+data/cache/
+data/quarantine/
+data/*.txt
+data/*.json
+*.parquet
+*.h5
+*.hdf5
+
+# Optuna databases
+*.db
+*.sqlite3
+
+# Discovery artifacts (generated — large)
+artifacts/discovery/studies/
+artifacts/discovery/results/
+artifacts/discovery/evidence/
+artifacts/discovery/*.log
+artifacts/discovery_run*/
+artifacts/risk_lab/
+artifacts/indicator_validation/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets & credentials
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.*
+secrets.*
+config.local.*
+
+# Test / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Logs & temp artifacts
+*.log
+audit_results.txt
+data/download.lock
+
+# Legacy automation outputs (if symlinked)
+Results/
+Poblaciones/
+node_modules/

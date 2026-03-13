@@ -1,10 +1,50 @@
 # Python
-env/
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Data files (downloaded/generated)
+*.parquet
+*.h5
+*.hdf5
+suitetrading/data/
+suitetrading/artifacts/
+suitetrading/.benchmarks/
+suitetrading/.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Node.js
 node_modules/
 
-# Environment Variables
-.env
+# Secrets & credentials
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.*
+secrets.*
+config.local.*
+
+# Research notes (personal)
+RESEARCH_PLAN.md
+RISK_MANAGEMENT_RESEARCH.md

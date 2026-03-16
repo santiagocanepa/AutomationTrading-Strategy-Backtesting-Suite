@@ -334,15 +334,15 @@ class PositionStateMachine:
     ) -> bool:
         if snap.state in (PositionState.FLAT, PositionState.CLOSED):
             return False
-        # Allow trailing if BE was activated or TP1 was hit
-        if not (snap.state == PositionState.OPEN_BREAKEVEN or snap.tp1_hit):
-            return False
-        # Must be after the TP1 bar (if TP1 path was used)
-        if snap.tp1_bar_index is not None and bar_index <= snap.tp1_bar_index:
-            return False
         if not trailing_signal:
             return False
-        return self._is_in_profit_simple(snap, bar["close"])
+        # If TP1 was hit, require profit (tighter exit post-TP1)
+        if snap.tp1_hit:
+            if snap.tp1_bar_index is not None and bar_index <= snap.tp1_bar_index:
+                return False
+            return self._is_in_profit_simple(snap, bar["close"])
+        # Otherwise, signal-based exit fires unconditionally
+        return True
 
     def _apply_trailing_exit(
         self, snap: PositionSnapshot, bar: dict[str, float],

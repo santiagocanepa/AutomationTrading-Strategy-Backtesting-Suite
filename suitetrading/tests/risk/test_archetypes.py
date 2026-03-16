@@ -25,6 +25,26 @@ class TestRegistry:
         expected = {
             "legacy_firestorm", "trend_following", "mean_reversion",
             "mixed", "pyramidal", "grid_dca", "momentum", "breakout",
+            "momentum_trend",
+            "donchian_simple",
+            "roc_simple",
+            "ma_cross_simple",
+            "adx_simple",
+            "roc_adx",
+            "roc_ma",
+            "roc_ssl",
+            "donchian_adx",
+            "ma_ssl", "ma_adx", "donchian_ssl",
+            "donchian_roc", "triple_momentum", "roc_fire",
+            "ssl_roc", "ssl_ma", "fire_roc", "fire_ma", "wt_roc",
+            "macd_simple", "macd_roc", "macd_ssl", "macd_adx",
+            "ema_simple", "ema_roc", "ema_adx",
+            "roc_donch_ssl", "roc_ma_ssl", "macd_roc_adx", "ema_roc_adx",
+            "roc_mtf", "ma_cross_mtf", "macd_mtf", "roc_ssl_mtf", "ema_roc_mtf",
+            "roc_mtf_longopt", "roc_shortopt", "macd_mtf_longopt", "macd_shortopt", "ma_x_ssl_longopt", "ema_mtf_longopt",
+            "rsi_roc", "rsi_mtf", "bband_roc", "wt_filter_roc", "roc_mtf_roc", "macd_roc_mtf",
+            "roc_fullrisk", "roc_fullrisk_mtf", "macd_fullrisk", "ma_x_fullrisk", "ema_fullrisk_mtf",
+            "donchian_mtf", "donchian_roc_mtf", "ema_adx_mtf", "roc_macd_mtf", "ssl_adx_mtf", "triple_mtf",
         }
         assert set(ARCHETYPE_REGISTRY.keys()) == expected
 

@@ -23,6 +23,7 @@ from suitetrading.indicators.signal_combiner import combine_signals
 from suitetrading.config.archetypes import (
     get_combination_mode,
     get_exit_indicators,
+    get_htf_filter,
     get_trailing_indicators,
 )
 from suitetrading.optimization._internal.schemas import ObjectiveResult
@@ -44,6 +45,11 @@ _EXIT_INVERSION: dict[str, tuple[str, dict[str, str]]] = {
     "macd":                 ("mode", {"bullish": "bearish", "bearish": "bullish"}),
     "bollinger_bands":      ("mode", {"lower": "upper", "upper": "lower"}),
     "vwap":                 ("mode", {"above": "below", "below": "above"}),
+    # Momentum
+    "roc":                  ("mode", {"bullish": "bearish", "bearish": "bullish"}),
+    "donchian":             ("mode", {"upper": "lower", "lower": "upper"}),
+    "adx_filter":           ("mode", {"strong": "weak", "weak": "strong"}),
+    "ma_crossover":         ("mode", {"bullish": "bearish", "bearish": "bullish"}),
 }
 
 
@@ -93,10 +99,14 @@ def _suggest_param(
 # ── Risk overrides search space ───────────────────────────────────────
 
 DEFAULT_RISK_SEARCH_SPACE: dict[str, dict[str, Any]] = {
-    "stop__atr_multiple": {"type": "float", "min": 1.0, "max": 5.0, "step": 0.5},
-    "sizing__risk_pct": {"type": "float", "min": 0.5, "max": 3.0, "step": 0.25},
-    "partial_tp__r_multiple": {"type": "float", "min": 0.2, "max": 3.0, "step": 0.1},
+    "stop__atr_multiple": {"type": "float", "min": 3.0, "max": 20.0, "step": 1.0},
+    "sizing__risk_pct": {"type": "float", "min": 2.0, "max": 25.0, "step": 1.0},
+    "partial_tp__r_multiple": {"type": "float", "min": 0.3, "max": 5.0, "step": 0.2},
     "partial_tp__close_pct": {"type": "float", "min": 10.0, "max": 80.0, "step": 5.0},
+    # Break-even buffer (how far above entry to set BE stop)
+    "break_even__buffer": {"type": "float", "min": 1.0001, "max": 1.01, "step": 0.001},
+    # Break-even activation r_multiple (for r_multiple activation mode)
+    "break_even__r_multiple": {"type": "float", "min": 0.5, "max": 3.0, "step": 0.5},
 }
 
 
@@ -183,6 +193,7 @@ class BacktestObjective:
         metric: str = "sharpe",
         risk_search_space: dict[str, dict[str, Any]] | None = None,
         mode: str = "auto",
+        commission_pct: float | None = None,
     ) -> None:
         self._dataset = dataset
         self._indicator_names = indicator_names or list(INDICATOR_REGISTRY.keys())
@@ -191,20 +202,28 @@ class BacktestObjective:
         self._direction = direction
         self._metric = metric
         self._mode = mode
+        self._commission_pct = commission_pct
         self._engine = BacktestEngine()
         self._metrics_engine = MetricsEngine()
 
         # Build effective risk search space: drop dead parameters based
-        # on archetype's stop model (e.g. firestorm_tm ignores atr_multiple).
+        # on archetype config (stop model, TP1 enabled, etc.)
         base_space = risk_search_space or dict(DEFAULT_RISK_SEARCH_SPACE)
-        stop_model = get_archetype(archetype).build_config().stop.model
-        if stop_model == "firestorm_tm":
+        archetype_cfg = get_archetype(archetype).build_config()
+        if archetype_cfg.stop.model == "firestorm_tm":
             base_space.pop("stop__atr_multiple", None)
+        if not archetype_cfg.partial_tp.enabled:
+            base_space.pop("partial_tp__r_multiple", None)
+            base_space.pop("partial_tp__close_pct", None)
+        if not archetype_cfg.break_even.enabled:
+            base_space.pop("break_even__buffer", None)
+            base_space.pop("break_even__r_multiple", None)
         self._risk_search_space = base_space
 
     # Minimum trades required; configs below this get a harsh penalty
     # so Optuna learns to avoid degenerate low-trade solutions.
-    MIN_TRADES: int = 30
+    # 300 ensures statistical significance across any TF/period.
+    MIN_TRADES: int = 300
     LOW_TRADE_PENALTY: float = -10.0
 
     def __call__(self, trial: optuna.Trial) -> float:
@@ -371,6 +390,25 @@ class BacktestObjective:
                     indicators_payload["firestorm_tm_up"] = ftm_result["up"]
                     indicators_payload["firestorm_tm_dn"] = ftm_result["dn"]
 
+        # ── HTF filter (higher-timeframe trend confirmation) ────
+        htf_ind_name, htf_tf = get_htf_filter(self._archetype)
+        if htf_ind_name and htf_tf and hasattr(self._dataset, 'ohlcv'):
+            from suitetrading.indicators.mtf import resample_ohlcv, align_to_base
+            try:
+                htf_ohlcv = resample_ohlcv(ohlcv, htf_tf, base_tf=self._dataset.base_timeframe)
+                htf_indicator = get_indicator(htf_ind_name)
+                htf_params = indicator_params.get(htf_ind_name, {})
+                htf_bullish = htf_indicator.compute(htf_ohlcv, **htf_params)
+                htf_bearish = ~htf_bullish
+                # Align to base TF index
+                htf_bull_aligned = align_to_base(htf_bullish, idx).fillna(False)
+                htf_bear_aligned = align_to_base(htf_bearish, idx).fillna(False)
+                # Apply: long only when HTF bullish, short only when HTF bearish
+                entry_long = entry_long & htf_bull_aligned
+                entry_short = entry_short & htf_bear_aligned
+            except Exception:
+                pass  # If HTF computation fails, proceed without filter
+
         return StrategySignals(
             entry_long=entry_long,
             entry_short=entry_short,
@@ -383,6 +421,8 @@ class BacktestObjective:
 
     def build_risk_config(self, risk_overrides: dict[str, Any]) -> RiskConfig:
         """Build a RiskConfig from archetype + overrides."""
+        if self._commission_pct is not None:
+            risk_overrides = {**risk_overrides, "commission_pct": self._commission_pct}
         return get_archetype(self._archetype).build_config(**risk_overrides)
 
     def run_single(self, params: dict[str, Any]) -> dict[str, Any]:

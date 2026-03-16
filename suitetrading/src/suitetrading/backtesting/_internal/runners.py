@@ -278,11 +278,9 @@ def run_fsm_backtest(
 
         # Record trade when position closes
         if prev_state not in (PositionState.FLAT, PositionState.CLOSED) and snapshot.state == PositionState.CLOSED:
+            # realized_pnl is for THIS trade only (reset between trades)
             trade_pnl = snapshot.realized_pnl
-            # Net of any previous trades' PnL
-            prior_pnl = sum(t.pnl for t in trades)
-            net_pnl = trade_pnl - prior_pnl
-            equity += net_pnl
+            equity += trade_pnl
 
             trades.append(TradeRecord(
                 entry_bar=current_entry_bar,
@@ -291,7 +289,7 @@ def run_fsm_backtest(
                 entry_price=current_entry_price,
                 exit_price=closes[i],
                 quantity=current_entry_qty,
-                pnl=net_pnl,
+                pnl=trade_pnl,
                 exit_reason=result.reason or "",
                 commission=trade_commission,
             ))
@@ -300,7 +298,11 @@ def run_fsm_backtest(
             # Reset snapshot to FLAT for next trade
             snapshot = fsm.reset(snapshot)
 
-        equity_curve[i] = equity
+        # Mark-to-market: include unrealized PnL of open position
+        if snapshot.state not in (PositionState.FLAT, PositionState.CLOSED):
+            equity_curve[i] = equity + snapshot.unrealized_pnl
+        else:
+            equity_curve[i] = equity
 
     return BacktestResult(
         equity_curve=equity_curve,

@@ -37,10 +37,12 @@ class WalkForwardEngine:
         config: WFOConfig | None = None,
         metric: str = "sharpe",
         auxiliary_indicators: list[str] | None = None,
+        commission_pct: float | None = None,
     ) -> None:
         self._config = config or WFOConfig()
         self._metric = metric
         self._auxiliary_indicators: set[str] = set(auxiliary_indicators or [])
+        self._commission_pct = commission_pct
         self._engine = BacktestEngine()
         self._metrics_engine = MetricsEngine()
 
@@ -176,6 +178,7 @@ class WalkForwardEngine:
         dataset: BacktestDataset,
         candidate_params: list[dict[str, Any]],
         archetype: str = "trend_following",
+        direction: str = "long",
         signal_builder: Callable[[BacktestDataset, dict[str, Any]], StrategySignals] | None = None,
         risk_builder: Callable[[str, dict[str, Any]], Any] | None = None,
         mode: str = "auto",
@@ -250,7 +253,7 @@ class WalkForwardEngine:
                 # IS evaluation
                 is_result = self._evaluate(
                     is_ds, ind_params, risk_overrides, archetype,
-                    signal_builder, risk_builder, mode,
+                    signal_builder, risk_builder, mode, direction,
                 )
                 is_metric_val = is_result.get(self._metric, 0.0)
                 is_metrics_all[pid].append(is_result)
@@ -262,7 +265,7 @@ class WalkForwardEngine:
                 # OOS evaluation (apply same params, no re-optimization)
                 oos_result = self._evaluate(
                     oos_ds, ind_params, risk_overrides, archetype,
-                    signal_builder, risk_builder, mode,
+                    signal_builder, risk_builder, mode, direction,
                 )
                 oos_metrics_all[pid].append(oos_result)
 
@@ -349,6 +352,7 @@ class WalkForwardEngine:
         signal_builder: Callable | None,
         risk_builder: Callable | None,
         mode: str,
+        direction: str = "long",
     ) -> dict[str, Any]:
         """Run a single backtest and return metrics + equity curve."""
         from suitetrading.risk.archetypes import get_archetype
@@ -361,10 +365,14 @@ class WalkForwardEngine:
         if risk_builder:
             rc = risk_builder(archetype, risk_overrides)
         else:
-            rc = get_archetype(archetype).build_config(**risk_overrides)
+            overrides = dict(risk_overrides)
+            if self._commission_pct is not None:
+                overrides["commission_pct"] = self._commission_pct
+            rc = get_archetype(archetype).build_config(**overrides)
 
         result = self._engine.run(
-            dataset=dataset, signals=signals, risk_config=rc, mode=mode,
+            dataset=dataset, signals=signals, risk_config=rc,
+            mode=mode, direction=direction,
         )
 
         metrics = self._metrics_engine.compute(

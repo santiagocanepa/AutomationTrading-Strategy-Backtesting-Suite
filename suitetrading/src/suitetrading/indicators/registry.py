@@ -25,6 +25,14 @@ from suitetrading.indicators.standard.indicators import (
     BollingerBands,
 )
 
+# ── Momentum indicators ───────────────────────────────────────────────
+from suitetrading.indicators.standard.momentum import (
+    ADXFilter,
+    DonchianBreakout,
+    MACrossover,
+    ROC,
+)
+
 INDICATOR_REGISTRY: dict[str, type[Indicator]] = {
     # Custom
     "firestorm": Firestorm,
@@ -40,6 +48,11 @@ INDICATOR_REGISTRY: dict[str, type[Indicator]] = {
     "atr": ATR,
     "vwap": VWAP,
     "bollinger_bands": BollingerBands,
+    # Momentum
+    "roc": ROC,
+    "donchian": DonchianBreakout,
+    "adx_filter": ADXFilter,
+    "ma_crossover": MACrossover,
 }
 
 

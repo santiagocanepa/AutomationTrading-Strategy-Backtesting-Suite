@@ -80,14 +80,18 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Mass strategy discovery pipeline")
     p.add_argument("--symbols", nargs="+", default=ALL_SYMBOLS)
     p.add_argument("--timeframes", nargs="+", default=ALL_TIMEFRAMES)
-    p.add_argument("--archetypes", nargs="+", default=ALL_ARCHETYPES,
-                   choices=ALL_ARCHETYPES)
+    p.add_argument("--archetypes", nargs="+", default=ALL_ARCHETYPES)
+    p.add_argument("--directions", nargs="+", default=["long"],
+                   choices=["long", "short"],
+                   help="Trade directions to search (independent tracks)")
     p.add_argument("--trials", type=int, default=500,
                    help="Optuna trials per study")
     p.add_argument("--top-n", type=int, default=50,
                    help="Top N trials to extract per study for WFO")
     p.add_argument("--months", type=int, default=12,
                    help="Months of data to use")
+    p.add_argument("--commission", type=float, default=0.04,
+                   help="Commission pct per side (default 0.04 = Binance maker)")
     p.add_argument("--exchange", default="binance")
     p.add_argument("--data-dir", default=str(ROOT / "data" / "raw"))
     p.add_argument("--output-dir", default=str(ROOT / "artifacts" / "discovery"))
@@ -110,8 +114,8 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def study_name(symbol: str, tf: str, archetype: str) -> str:
-    return f"{symbol}_{tf}_{archetype}"
+def study_name(symbol: str, tf: str, archetype: str, direction: str = "long") -> str:
+    return f"{symbol}_{tf}_{archetype}_{direction}"
 
 
 def load_ohlcv(
@@ -176,6 +180,7 @@ def run_optuna_study(
     indicator_names: list[str],
     auxiliary_indicators: list[str] | None = None,
     archetype: str,
+    direction: str = "long",
     args: argparse.Namespace,
     studies_dir: Path,
 ) -> tuple[list[dict[str, Any]], int]:
@@ -193,8 +198,10 @@ def run_optuna_study(
         indicator_names=indicator_names,
         auxiliary_indicators=auxiliary_indicators,
         archetype=archetype,
+        direction=direction,
         metric=args.metric,
         mode=args.mode,
+        commission_pct=args.commission,
     )
 
     optimizer = OptunaOptimizer(
@@ -242,6 +249,7 @@ def run_wfo_and_filter(
     dataset: BacktestDataset,
     candidates: list[dict[str, Any]],
     archetype: str,
+    direction: str = "long",
     auxiliary_indicators: list[str] | None = None,
     total_trials: int,
     args: argparse.Namespace,
@@ -264,7 +272,11 @@ def run_wfo_and_filter(
         )
         return {"study": sname, "skipped": True, "reason": "insufficient_bars"}
 
-    wfo = WalkForwardEngine(config=wfo_config, metric=args.metric, auxiliary_indicators=auxiliary_indicators)
+    wfo = WalkForwardEngine(
+        config=wfo_config, metric=args.metric,
+        auxiliary_indicators=auxiliary_indicators,
+        commission_pct=args.commission,
+    )
 
     # Format candidates for WFO
     wfo_candidates = [
@@ -277,6 +289,7 @@ def run_wfo_and_filter(
         dataset=dataset,
         candidate_params=wfo_candidates,
         archetype=archetype,
+        direction=direction,
         mode=args.mode,
     )
 
@@ -409,11 +422,14 @@ def main() -> None:
     for d in [studies_dir, results_dir, evidence_dir]:
         d.mkdir(parents=True, exist_ok=True)
 
-    total_studies = len(args.symbols) * len(args.timeframes) * len(args.archetypes)
+    total_studies = (
+        len(args.symbols) * len(args.timeframes)
+        * len(args.archetypes) * len(args.directions)
+    )
     logger.info(
-        "Discovery: {} symbols × {} TFs × {} archetypes = {} studies, {} trials each",
+        "Discovery: {} symbols × {} TFs × {} archetypes × {} dirs = {} studies, {} trials each",
         len(args.symbols), len(args.timeframes), len(args.archetypes),
-        total_studies, args.trials,
+        len(args.directions), total_studies, args.trials,
     )
 
     all_finalists: list[dict[str, Any]] = []
@@ -437,85 +453,91 @@ def main() -> None:
             )
 
             for archetype in args.archetypes:
-                study_idx += 1
-                sname = study_name(symbol, tf, archetype)
                 entry_indicators = get_entry_indicators(archetype)
                 auxiliary_indicators = get_auxiliary_indicators(archetype)
                 all_indicators = entry_indicators + auxiliary_indicators
 
-                separator = "=" * 60
-                logger.info(
-                    "\n{}\n  [{}/{}] {} — entry: {}, auxiliary: {}\n{}",
-                    separator, study_idx, total_studies, sname,
-                    entry_indicators, auxiliary_indicators, separator,
-                )
+                for direction in args.directions:
+                    study_idx += 1
+                    sname = study_name(symbol, tf, archetype, direction)
 
-                # Phase A: Optuna search
-                t0 = time.perf_counter()
-                top_trials, total_completed = run_optuna_study(
-                    sname=sname,
-                    dataset=dataset,
-                    indicator_names=all_indicators,
-                    auxiliary_indicators=auxiliary_indicators,
-                    archetype=archetype,
-                    args=args,
-                    studies_dir=studies_dir,
-                )
-                optuna_time = time.perf_counter() - t0
-
-                # Export top-N
-                if top_trials:
-                    pd.DataFrame(top_trials).to_csv(
-                        results_dir / f"top{args.top_n}_{sname}.csv", index=False,
+                    separator = "=" * 60
+                    logger.info(
+                        "\n{}\n  [{}/{}] {} — entry: {}, auxiliary: {}, dir: {}\n{}",
+                        separator, study_idx, total_studies, sname,
+                        entry_indicators, auxiliary_indicators, direction, separator,
                     )
 
-                summary: dict[str, Any] = {
-                    "study": sname,
-                    "symbol": symbol,
-                    "timeframe": tf,
-                    "archetype": archetype,
-                    "indicators": all_indicators,
-                    "n_trials": total_completed,
-                    "n_bars": len(ohlcv),
-                    "optuna_sec": round(optuna_time, 1),
-                    "best_value": top_trials[0]["value"] if top_trials else None,
-                }
-
-                # Phase B: WFO + anti-overfit
-                if not args.skip_wfo and top_trials:
-                    candidates = extract_candidate_params(top_trials, all_indicators)
-                    t1 = time.perf_counter()
-                    wfo_result = run_wfo_and_filter(
+                    # Phase A: Optuna search
+                    t0 = time.perf_counter()
+                    top_trials, total_completed = run_optuna_study(
                         sname=sname,
                         dataset=dataset,
-                        candidates=candidates,
-                        archetype=archetype,
+                        indicator_names=all_indicators,
                         auxiliary_indicators=auxiliary_indicators,
-                        total_trials=total_completed,
+                        archetype=archetype,
+                        direction=direction,
                         args=args,
+                        studies_dir=studies_dir,
                     )
-                    wfo_time = time.perf_counter() - t1
-                    summary["wfo_sec"] = round(wfo_time, 1)
-                    summary["pbo"] = wfo_result.get("pbo")
-                    summary["n_finalists"] = wfo_result.get("n_finalists", 0)
+                    optuna_time = time.perf_counter() - t0
 
-                    # Collect finalists
-                    for f in wfo_result.get("finalists", []):
-                        f["study"] = sname
-                        f["symbol"] = symbol
-                        f["timeframe"] = tf
-                        f["archetype"] = archetype
-                        all_finalists.append(f)
+                    # Export top-N
+                    if top_trials:
+                        pd.DataFrame(top_trials).to_csv(
+                            results_dir / f"top{args.top_n}_{sname}.csv", index=False,
+                        )
 
-                    # Save WFO result
-                    wfo_export = {
-                        k: v for k, v in wfo_result.items()
-                        if k not in ("dsr_results",)
+                    summary: dict[str, Any] = {
+                        "study": sname,
+                        "symbol": symbol,
+                        "timeframe": tf,
+                        "archetype": archetype,
+                        "direction": direction,
+                        "indicators": all_indicators,
+                        "n_trials": total_completed,
+                        "n_bars": len(ohlcv),
+                        "optuna_sec": round(optuna_time, 1),
+                        "best_value": top_trials[0]["value"] if top_trials else None,
                     }
-                    with open(results_dir / f"wfo_{sname}.json", "w") as fp:
-                        json.dump(wfo_export, fp, indent=2, default=str)
 
-                study_summaries.append(summary)
+                    # Phase B: WFO + anti-overfit
+                    if not args.skip_wfo and top_trials:
+                        candidates = extract_candidate_params(top_trials, all_indicators)
+                        t1 = time.perf_counter()
+                        wfo_result = run_wfo_and_filter(
+                            sname=sname,
+                            dataset=dataset,
+                            candidates=candidates,
+                            archetype=archetype,
+                            direction=direction,
+                            auxiliary_indicators=auxiliary_indicators,
+                            total_trials=total_completed,
+                            args=args,
+                        )
+                        wfo_time = time.perf_counter() - t1
+                        summary["wfo_sec"] = round(wfo_time, 1)
+                        summary["pbo"] = wfo_result.get("pbo")
+                        summary["n_finalists"] = wfo_result.get("n_finalists", 0)
+
+                        # Collect finalists
+                        for f in wfo_result.get("finalists", []):
+                            f["study"] = sname
+                            f["symbol"] = symbol
+                            f["timeframe"] = tf
+                            f["archetype"] = archetype
+                            f["direction"] = direction
+                            all_finalists.append(f)
+
+                        # Save WFO result
+                        wfo_export = {
+                            k: v for k, v in wfo_result.items()
+                            if k not in ("dsr_results",)
+                        }
+                        with open(results_dir / f"wfo_{sname}.json", "w") as fp:
+                            json.dump(wfo_export, fp, indent=2, default=str)
+
+                    study_summaries.append(summary)
 
     # ── Export aggregated results ─────────────────────────────────────
 
@@ -546,6 +568,7 @@ def main() -> None:
                 "symbol": f["symbol"],
                 "timeframe": f["timeframe"],
                 "archetype": f["archetype"],
+                "direction": f.get("direction", "long"),
                 "oos_sharpe": f["observed_sharpe"],
                 "pbo": f["pbo"],
                 "dsr": f["dsr"],

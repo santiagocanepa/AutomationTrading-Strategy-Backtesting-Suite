@@ -430,6 +430,34 @@ ARCHETYPE_INDICATORS: dict[str, ArchetypeIndicators] = {
         "combination_mode": "majority", "majority_threshold": 2,
         "htf_filter": "ma_crossover", "htf_timeframe": "1d",
     },
+    # ── Full risk chain (TP1 + BE + SSL trailing) ──
+    "roc_fullrisk": {
+        "entry": ["roc"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_fullrisk_mtf": {
+        "entry": ["roc"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+        "htf_filter": "ma_crossover", "htf_timeframe": "1d",
+    },
+    "macd_fullrisk": {
+        "entry": ["macd"], "auxiliary": ["ssl_channel"],
+        "exit": ["macd"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ma_x_fullrisk": {
+        "entry": ["ma_crossover"], "auxiliary": ["ssl_channel"],
+        "exit": ["ma_crossover"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ema_fullrisk_mtf": {
+        "entry": ["ema"], "auxiliary": ["ssl_channel"],
+        "exit": ["ema"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+        "htf_filter": "ma_crossover", "htf_timeframe": "1d",
+    },
 }
 
 

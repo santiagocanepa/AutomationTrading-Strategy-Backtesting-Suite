@@ -458,6 +458,101 @@ ARCHETYPE_INDICATORS: dict[str, ArchetypeIndicators] = {
         "combination_mode": "excluyente",
         "htf_filter": "ma_crossover", "htf_timeframe": "1d",
     },
+    # ── Full risk chain + pyramid ──
+    "roc_fullrisk_pyr": {
+        "entry": ["roc"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "macd_fullrisk_pyr": {
+        "entry": ["macd"], "auxiliary": ["ssl_channel"],
+        "exit": ["macd"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ma_x_fullrisk_pyr": {
+        "entry": ["ma_crossover"], "auxiliary": ["ssl_channel"],
+        "exit": ["ma_crossover"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_fullrisk_pyr_mtf": {
+        "entry": ["roc"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+        "htf_filter": "ma_crossover", "htf_timeframe": "1d",
+    },
+    # ── Full risk chain + time exit ──
+    "roc_fullrisk_time": {
+        "entry": ["roc"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    # ── Full risk chain + pyramid + time exit (all features) ──
+    "roc_fullrisk_all": {
+        "entry": ["roc"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    # ── More indicators with pyramid ──
+    "donchian_fullrisk_pyr": {
+        "entry": ["donchian"], "auxiliary": ["ssl_channel"],
+        "exit": ["donchian"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ema_fullrisk_pyr": {
+        "entry": ["ema"], "auxiliary": ["ssl_channel"],
+        "exit": ["ema"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "rsi_fullrisk_pyr": {
+        "entry": ["rsi"], "auxiliary": ["ssl_channel"],
+        "exit": ["rsi"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    # ── Cross-indicator combos with pyramid ──
+    "roc_macd_fullrisk_pyr": {
+        "entry": ["roc", "macd"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc", "macd"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_ema_fullrisk_pyr": {
+        "entry": ["roc", "ema"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc", "ema"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "macd_ema_fullrisk_pyr": {
+        "entry": ["macd", "ema"], "auxiliary": ["ssl_channel"],
+        "exit": ["macd", "ema"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_adx_fullrisk_pyr": {
+        "entry": ["roc", "adx_filter"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    # ── MTF variants of top performers ──
+    "macd_fullrisk_pyr_mtf": {
+        "entry": ["macd"], "auxiliary": ["ssl_channel"],
+        "exit": ["macd"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+        "htf_filter": "ma_crossover", "htf_timeframe": "1d",
+    },
+    "roc_adx_fullrisk_pyr_mtf": {
+        "entry": ["roc", "adx_filter"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+        "htf_filter": "ma_crossover", "htf_timeframe": "1d",
+    },
+    # ── MACD time exit / all features ──
+    "macd_fullrisk_time": {
+        "entry": ["macd"], "auxiliary": ["ssl_channel"],
+        "exit": ["macd"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "macd_fullrisk_all": {
+        "entry": ["macd"], "auxiliary": ["ssl_channel"],
+        "exit": ["macd"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
 }
 
 

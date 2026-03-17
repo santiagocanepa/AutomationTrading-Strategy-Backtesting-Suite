@@ -99,14 +99,22 @@ def _suggest_param(
 # ── Risk overrides search space ───────────────────────────────────────
 
 DEFAULT_RISK_SEARCH_SPACE: dict[str, dict[str, Any]] = {
+    # ── Stop ──
     "stop__atr_multiple": {"type": "float", "min": 3.0, "max": 20.0, "step": 1.0},
-    "sizing__risk_pct": {"type": "float", "min": 2.0, "max": 25.0, "step": 1.0},
-    "partial_tp__r_multiple": {"type": "float", "min": 0.3, "max": 5.0, "step": 0.2},
+    # ── Sizing ──
+    "sizing__risk_pct": {"type": "float", "min": 1.0, "max": 50.0, "step": 1.0},
+    # ── Partial TP ──
+    "partial_tp__r_multiple": {"type": "float", "min": 0.5, "max": 5.0, "step": 0.25},
     "partial_tp__close_pct": {"type": "float", "min": 10.0, "max": 80.0, "step": 5.0},
-    # Break-even buffer (how far above entry to set BE stop)
+    # ── Break-even ──
     "break_even__buffer": {"type": "float", "min": 1.0001, "max": 1.01, "step": 0.001},
-    # Break-even activation r_multiple (for r_multiple activation mode)
-    "break_even__r_multiple": {"type": "float", "min": 0.5, "max": 3.0, "step": 0.5},
+    "break_even__r_multiple": {"type": "float", "min": 0.5, "max": 3.0, "step": 0.25},
+    # ── Pyramid ──
+    "pyramid__max_adds": {"type": "int", "min": 1, "max": 5},
+    "pyramid__block_bars": {"type": "int", "min": 3, "max": 50},
+    "pyramid__threshold_factor": {"type": "float", "min": 1.002, "max": 1.05, "step": 0.002},
+    # ── Time exit ──
+    "time_exit__max_bars": {"type": "int", "min": 30, "max": 500},
 }
 
 
@@ -218,6 +226,12 @@ class BacktestObjective:
         if not archetype_cfg.break_even.enabled:
             base_space.pop("break_even__buffer", None)
             base_space.pop("break_even__r_multiple", None)
+        if not archetype_cfg.pyramid.enabled:
+            base_space.pop("pyramid__max_adds", None)
+            base_space.pop("pyramid__block_bars", None)
+            base_space.pop("pyramid__threshold_factor", None)
+        if not archetype_cfg.time_exit.enabled:
+            base_space.pop("time_exit__max_bars", None)
         self._risk_search_space = base_space
 
     # Minimum trades required; configs below this get a harsh penalty

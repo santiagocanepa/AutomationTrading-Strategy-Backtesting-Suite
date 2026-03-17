@@ -78,6 +78,24 @@ from suitetrading.risk.archetypes.macd_fullrisk import _Arch as MacdFullrisk
 from suitetrading.risk.archetypes.ma_x_fullrisk import _Arch as MaXFullrisk
 from suitetrading.risk.archetypes.ema_fullrisk_mtf import _Arch as EmaFullriskMtf
 
+from suitetrading.risk.archetypes.roc_fullrisk_pyr import _Arch as RocFullriskPyr
+from suitetrading.risk.archetypes.macd_fullrisk_pyr import _Arch as MacdFullriskPyr
+from suitetrading.risk.archetypes.ma_x_fullrisk_pyr import _Arch as MaXFullriskPyr
+from suitetrading.risk.archetypes.roc_fullrisk_pyr_mtf import _Arch as RocFullriskPyrMtf
+from suitetrading.risk.archetypes.roc_fullrisk_time import _Arch as RocFullriskTime
+from suitetrading.risk.archetypes.roc_fullrisk_all import _Arch as RocFullriskAll
+from suitetrading.risk.archetypes.donchian_fullrisk_pyr import _Arch as DonchianFullriskPyr
+from suitetrading.risk.archetypes.ema_fullrisk_pyr import _Arch as EmaFullriskPyr
+from suitetrading.risk.archetypes.rsi_fullrisk_pyr import _Arch as RsiFullriskPyr
+from suitetrading.risk.archetypes.roc_macd_fullrisk_pyr import _Arch as RocMacdFullriskPyr
+from suitetrading.risk.archetypes.roc_ema_fullrisk_pyr import _Arch as RocEmaFullriskPyr
+from suitetrading.risk.archetypes.macd_ema_fullrisk_pyr import _Arch as MacdEmaFullriskPyr
+from suitetrading.risk.archetypes.roc_adx_fullrisk_pyr import _Arch as RocAdxFullriskPyr
+from suitetrading.risk.archetypes.macd_fullrisk_pyr_mtf import _Arch as MacdFullriskPyrMtf
+from suitetrading.risk.archetypes.roc_adx_fullrisk_pyr_mtf import _Arch as RocAdxFullriskPyrMtf
+from suitetrading.risk.archetypes.macd_fullrisk_time import _Arch as MacdFullriskTime
+from suitetrading.risk.archetypes.macd_fullrisk_all import _Arch as MacdFullriskAll
+
 ARCHETYPE_REGISTRY: dict[str, type[RiskArchetype]] = {
     "legacy_firestorm": LegacyFirestormProfile,
     "trend_following": TrendFollowing,
@@ -146,6 +164,23 @@ ARCHETYPE_REGISTRY: dict[str, type[RiskArchetype]] = {
     "macd_fullrisk": MacdFullrisk,
     "ma_x_fullrisk": MaXFullrisk,
     "ema_fullrisk_mtf": EmaFullriskMtf,
+    "roc_fullrisk_pyr": RocFullriskPyr,
+    "macd_fullrisk_pyr": MacdFullriskPyr,
+    "ma_x_fullrisk_pyr": MaXFullriskPyr,
+    "roc_fullrisk_pyr_mtf": RocFullriskPyrMtf,
+    "roc_fullrisk_time": RocFullriskTime,
+    "roc_fullrisk_all": RocFullriskAll,
+    "donchian_fullrisk_pyr": DonchianFullriskPyr,
+    "ema_fullrisk_pyr": EmaFullriskPyr,
+    "rsi_fullrisk_pyr": RsiFullriskPyr,
+    "roc_macd_fullrisk_pyr": RocMacdFullriskPyr,
+    "roc_ema_fullrisk_pyr": RocEmaFullriskPyr,
+    "macd_ema_fullrisk_pyr": MacdEmaFullriskPyr,
+    "roc_adx_fullrisk_pyr": RocAdxFullriskPyr,
+    "macd_fullrisk_pyr_mtf": MacdFullriskPyrMtf,
+    "roc_adx_fullrisk_pyr_mtf": RocAdxFullriskPyrMtf,
+    "macd_fullrisk_time": MacdFullriskTime,
+    "macd_fullrisk_all": MacdFullriskAll,
 }
 
 

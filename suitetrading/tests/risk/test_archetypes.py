@@ -45,6 +45,13 @@ class TestRegistry:
             "rsi_roc", "rsi_mtf", "bband_roc", "wt_filter_roc", "roc_mtf_roc", "macd_roc_mtf",
             "roc_fullrisk", "roc_fullrisk_mtf", "macd_fullrisk", "ma_x_fullrisk", "ema_fullrisk_mtf",
             "donchian_mtf", "donchian_roc_mtf", "ema_adx_mtf", "roc_macd_mtf", "ssl_adx_mtf", "triple_mtf",
+            "roc_fullrisk_pyr", "macd_fullrisk_pyr", "ma_x_fullrisk_pyr",
+            "roc_fullrisk_pyr_mtf", "roc_fullrisk_time", "roc_fullrisk_all",
+            "donchian_fullrisk_pyr", "ema_fullrisk_pyr", "rsi_fullrisk_pyr",
+            "roc_macd_fullrisk_pyr", "roc_ema_fullrisk_pyr", "macd_ema_fullrisk_pyr",
+            "roc_adx_fullrisk_pyr",
+            "macd_fullrisk_pyr_mtf", "roc_adx_fullrisk_pyr_mtf",
+            "macd_fullrisk_time", "macd_fullrisk_all",
         }
         assert set(ARCHETYPE_REGISTRY.keys()) == expected
 

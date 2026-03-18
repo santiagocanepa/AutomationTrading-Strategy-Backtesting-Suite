@@ -69,7 +69,10 @@ from suitetrading.config.archetypes import (
 )
 
 ALL_TIMEFRAMES = ["15m", "1h", "4h", "1d"]
-ALL_SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "AVAXUSDT", "LINKUSDT"]
+ALL_SYMBOLS = [
+    "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "AVAXUSDT", "LINKUSDT",
+    "DOTUSDT", "ADAUSDT", "DOGEUSDT", "XRPUSDT",
+]
 ALL_ARCHETYPES = list(ARCHETYPE_INDICATORS.keys())
 
 

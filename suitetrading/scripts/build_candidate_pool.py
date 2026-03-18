@@ -219,12 +219,17 @@ def main() -> None:
     results: list[dict[str, Any]] = []
     errors: list[str] = []
 
+    # Auto-detect exchange from symbol (USDT suffix = binance, else alpaca)
+    def _detect_exchange(sym: str) -> str:
+        return "binance" if sym.endswith("USDT") or sym.endswith("USD") else "alpaca"
+
     for data_key, entries in by_data.items():
         symbol, tf = data_key.rsplit("_", 1)
         if data_key not in ohlcv_cache:
+            exchange = _detect_exchange(symbol)
             try:
                 ohlcv_cache[data_key] = load_ohlcv(
-                    args.exchange, symbol, tf, args.months, Path(args.data_dir),
+                    exchange, symbol, tf, args.months, Path(args.data_dir),
                 )
                 logger.info("{} @ {}: {} bars", symbol, tf, len(ohlcv_cache[data_key]))
             except Exception as e:
@@ -235,7 +240,7 @@ def main() -> None:
 
         ohlcv = ohlcv_cache[data_key]
         dataset = build_dataset_from_df(
-            ohlcv, exchange=args.exchange, symbol=symbol, base_timeframe=tf,
+            ohlcv, exchange=exchange, symbol=symbol, base_timeframe=tf,
         )
 
         for c in entries:

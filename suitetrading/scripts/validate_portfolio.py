@@ -306,21 +306,49 @@ def main() -> None:
     results: dict[str, Any] = {"n_strategies": n_strategies}
 
     # ── 1. Ensemble PBO ──
-    logger.info("Computing ensemble PBO with {} configs...", args.n_portfolio_configs)
-    # Generate variant portfolio configs by perturbing weights
-    portfolio_configs: dict[str, np.ndarray] = {"base": port_equity}
-    for i in range(args.n_portfolio_configs - 1):
-        noise = rng.uniform(0.8, 1.2, size=len(available_weights))
-        perturbed_w = available_weights * noise
-        perturbed_w /= perturbed_w.sum()
-        perturbed_ret = returns_matrix @ perturbed_w
-        perturbed_eq = np.cumprod(1.0 + perturbed_ret) * 100_000.0
-        portfolio_configs[f"config_{i}"] = perturbed_eq
+    # Single-portfolio temporal robustness: split the portfolio equity curve
+    # into S sub-periods, measure Sharpe in each IS vs OOS half.
+    # PBO = fraction of splits where IS-profitable but OOS-unprofitable.
+    logger.info("Computing ensemble PBO (temporal robustness)...")
+    S = args.cscv_subsamples
+    port_returns_full = returns_matrix @ available_weights
+    T_ret = len(port_returns_full)
+    sub_len = T_ret // S
 
-    results["ensemble_pbo"] = compute_ensemble_pbo(
-        portfolio_configs, n_subsamples=args.cscv_subsamples,
-    )
-    logger.info("Ensemble PBO: {:.4f}", results["ensemble_pbo"]["pbo"])
+    import itertools
+    half = S // 2
+    all_combos = list(itertools.combinations(range(S), half))
+    if len(all_combos) > 5000:
+        combo_indices = rng.choice(len(all_combos), 5000, replace=False)
+        all_combos = [all_combos[i] for i in sorted(combo_indices)]
+
+    overfit_count = 0
+    for is_subs in all_combos:
+        oos_subs = tuple(s for s in range(S) if s not in is_subs)
+        # IS returns
+        is_ret = np.concatenate([
+            port_returns_full[s * sub_len:(s + 1) * sub_len] for s in is_subs
+        ])
+        # OOS returns
+        oos_ret = np.concatenate([
+            port_returns_full[s * sub_len:(s + 1) * sub_len] for s in oos_subs
+        ])
+        is_std = np.std(is_ret, ddof=1)
+        oos_std = np.std(oos_ret, ddof=1)
+        is_sharpe = np.mean(is_ret) / is_std if is_std > 1e-12 else 0.0
+        oos_sharpe = np.mean(oos_ret) / oos_std if oos_std > 1e-12 else 0.0
+        # Overfit if IS looks good but OOS doesn't
+        if is_sharpe > 0 and oos_sharpe <= 0:
+            overfit_count += 1
+
+    pbo = overfit_count / len(all_combos)
+    results["ensemble_pbo"] = {
+        "pbo": pbo,
+        "n_splits": S,
+        "n_combinations": len(all_combos),
+        "overfit_count": overfit_count,
+    }
+    logger.info("Ensemble PBO: {:.4f} ({}/{} overfit)", pbo, overfit_count, len(all_combos))
 
     # ── 2. Portfolio DSR ──
     logger.info("Computing portfolio DSR...")

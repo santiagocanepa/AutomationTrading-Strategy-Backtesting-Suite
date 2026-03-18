@@ -45,6 +45,7 @@ class PortfolioOptimizer:
             "risk_parity": self._risk_parity,
             "kelly": self._fractional_kelly,
             "equal": self._equal_weight,
+            "shrinkage_kelly": self._shrinkage_kelly,
         }
         if method not in methods:
             raise ValueError(f"Unknown method: {method!r}")
@@ -248,6 +249,119 @@ class PortfolioOptimizer:
             expected_sharpe=port_stats["expected_sharpe"],
             metrics={"n_strategies": float(n)},
         )
+
+    def _shrinkage_kelly(
+        self,
+        returns: np.ndarray,
+        ids: list[str],
+        kelly_fraction: float = 0.5,
+        shrinkage_alpha: float | None = None,
+        max_weight: float = 0.15,
+        **kw: Any,
+    ) -> PortfolioWeights:
+        """Kelly with Ledoit-Wolf covariance shrinkage toward equal-weight.
+
+        Shrinks the covariance matrix toward a scaled identity (diagonal),
+        reducing estimation error. Then applies Kelly + blends result with
+        equal-weight using shrinkage_alpha.
+
+        If shrinkage_alpha is None, it's computed via Ledoit-Wolf formula.
+        """
+        n = returns.shape[1]
+        T = returns.shape[0]
+        mu = np.mean(returns, axis=0)
+        sample_cov = np.cov(returns, rowvar=False, ddof=1)
+
+        # Ledoit-Wolf shrinkage intensity (Oracle Approximating Shrinkage)
+        if shrinkage_alpha is None:
+            shrinkage_alpha = self._ledoit_wolf_shrinkage(returns, sample_cov)
+
+        # Shrinkage target: scaled identity (avg variance on diagonal)
+        target = np.eye(n) * np.trace(sample_cov) / n
+
+        # Shrunk covariance
+        shrunk_cov = (1.0 - shrinkage_alpha) * sample_cov + shrinkage_alpha * target
+        shrunk_cov += np.eye(n) * 1e-8
+
+        try:
+            cov_inv = np.linalg.inv(shrunk_cov)
+        except np.linalg.LinAlgError:
+            cov_inv = np.linalg.pinv(shrunk_cov)
+
+        # Kelly weights on shrunk covariance
+        kelly_w = kelly_fraction * (cov_inv @ mu)
+        kelly_w = np.clip(kelly_w, 0.0, max_weight)
+
+        # Blend with equal weight for extra stability
+        equal_w = np.ones(n) / n
+        blend_factor = min(shrinkage_alpha, 0.5)  # More shrinkage → more equal-weight
+        weights = (1.0 - blend_factor) * kelly_w + blend_factor * equal_w
+
+        # Renormalize
+        w_sum = weights.sum()
+        if w_sum < 1e-12:
+            weights = equal_w
+        else:
+            weights /= w_sum
+
+        port_stats = self._portfolio_stats(returns, weights)
+
+        logger.debug(
+            "Shrinkage Kelly (f={:.2f}, α={:.3f}, blend={:.3f}): sharpe={:.4f}, max_w={:.4f}",
+            kelly_fraction, shrinkage_alpha, blend_factor,
+            port_stats["expected_sharpe"], float(np.max(weights)),
+        )
+
+        return PortfolioWeights(
+            weights=weights,
+            strategy_ids=ids,
+            method="shrinkage_kelly",
+            expected_return=port_stats["expected_return"],
+            expected_volatility=port_stats["expected_volatility"],
+            expected_sharpe=port_stats["expected_sharpe"],
+            metrics={
+                "kelly_fraction": kelly_fraction,
+                "shrinkage_alpha": shrinkage_alpha,
+                "blend_factor": blend_factor,
+                "max_weight": float(np.max(weights)),
+                "min_weight": float(np.min(weights)),
+                "n_nonzero": float(np.sum(weights > 1e-6)),
+            },
+        )
+
+    @staticmethod
+    def _ledoit_wolf_shrinkage(returns: np.ndarray, sample_cov: np.ndarray) -> float:
+        """Compute Ledoit-Wolf optimal shrinkage intensity.
+
+        Oracle Approximating Shrinkage toward scaled identity.
+        Returns alpha ∈ [0, 1] where higher = more shrinkage.
+        """
+        T, n = returns.shape
+        mu = np.mean(returns, axis=0)
+        X = returns - mu  # centered
+
+        # Target: scaled identity
+        trace_S = np.trace(sample_cov)
+        target_var = trace_S / n
+
+        # Compute optimal shrinkage (Ledoit & Wolf 2004)
+        sum_sq = 0.0
+        for t in range(T):
+            x = X[t].reshape(-1, 1)
+            outer = x @ x.T
+            diff = outer - sample_cov
+            sum_sq += np.sum(diff ** 2)
+
+        # Frobenius norm of (S - target)
+        target = np.eye(n) * target_var
+        diff_target = sample_cov - target
+        denom = T ** 2 * np.sum(diff_target ** 2)
+
+        if denom < 1e-16:
+            return 0.5
+
+        alpha = float(np.clip(sum_sq / denom, 0.0, 1.0))
+        return alpha
 
     def _portfolio_stats(self, returns: np.ndarray, weights: np.ndarray) -> dict[str, float]:
         """Compute expected return, vol, sharpe for given weights."""

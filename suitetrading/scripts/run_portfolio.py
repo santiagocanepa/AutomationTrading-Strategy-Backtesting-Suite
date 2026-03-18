@@ -41,7 +41,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--target-count", type=int, default=100)
     p.add_argument("--max-avg-corr", type=float, default=0.30)
     p.add_argument("--methods", nargs="+",
-                   default=["equal", "min_variance", "risk_parity", "kelly"])
+                   default=["equal", "min_variance", "risk_parity", "kelly", "shrinkage_kelly"])
     p.add_argument("--rebalance", default="none",
                    choices=["none", "daily", "weekly", "monthly"])
     p.add_argument("--initial-capital", type=float, default=100_000.0)

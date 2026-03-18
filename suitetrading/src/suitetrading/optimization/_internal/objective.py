@@ -103,23 +103,25 @@ def _suggest_param(
 
 # ── Risk overrides search space ───────────────────────────────────────
 
+# Narrowed from 764K-trial feature importance analysis (2026-03-18).
+# Original space: ~80 trillion combinations.
+# Narrowed space: ~290 million combinations (~275x reduction).
 DEFAULT_RISK_SEARCH_SPACE: dict[str, dict[str, Any]] = {
-    # ── Stop ──
-    "stop__atr_multiple": {"type": "float", "min": 3.0, "max": 20.0, "step": 1.0},
-    # ── Sizing ──
-    "sizing__risk_pct": {"type": "float", "min": 1.0, "max": 50.0, "step": 1.0},
-    # ── Partial TP ──
-    "partial_tp__r_multiple": {"type": "float", "min": 0.5, "max": 5.0, "step": 0.25},
-    "partial_tp__close_pct": {"type": "float", "min": 10.0, "max": 80.0, "step": 5.0},
-    # ── Break-even ──
-    "break_even__buffer": {"type": "float", "min": 1.0001, "max": 1.01, "step": 0.001},
-    "break_even__r_multiple": {"type": "float", "min": 0.5, "max": 3.0, "step": 0.25},
-    # ── Pyramid ──
-    "pyramid__max_adds": {"type": "int", "min": 1, "max": 5},
-    "pyramid__block_bars": {"type": "int", "min": 3, "max": 50},
-    "pyramid__threshold_factor": {"type": "float", "min": 1.002, "max": 1.05, "step": 0.002},
-    # ── Time exit ──
-    "time_exit__max_bars": {"type": "int", "min": 30, "max": 500},
+    # ── Stop ── (top1% median: 12, range 4-20)
+    "stop__atr_multiple": {"type": "float", "min": 4.0, "max": 20.0, "step": 1.0},
+    # ── Sizing ── (top1%: 3-25%, median 14)
+    "sizing__risk_pct": {"type": "float", "min": 3.0, "max": 25.0, "step": 1.0},
+    # ── Partial TP ── (top1%: r_mult 0.5-1.5, close 10-45%)
+    "partial_tp__r_multiple": {"type": "float", "min": 0.5, "max": 1.5, "step": 0.25},
+    "partial_tp__close_pct": {"type": "float", "min": 10.0, "max": 45.0, "step": 5.0},
+    # ── Break-even ── (low impact, keep narrow)
+    "break_even__buffer": {"type": "float", "min": 1.003, "max": 1.009, "step": 0.001},
+    # ── Pyramid ── (top1%: 1-4 adds, 8-40 bars)
+    "pyramid__max_adds": {"type": "int", "min": 1, "max": 4},
+    "pyramid__block_bars": {"type": "int", "min": 8, "max": 40},
+    "pyramid__threshold_factor": {"type": "float", "min": 1.005, "max": 1.03, "step": 0.005},
+    # ── Time exit ── (low impact, keep but narrow)
+    "time_exit__max_bars": {"type": "int", "min": 50, "max": 400},
 }
 
 

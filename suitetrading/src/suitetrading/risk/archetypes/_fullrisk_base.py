@@ -28,11 +28,16 @@ def fullrisk_config(
     trailing_mode
         ``"signal"`` (exit on indicator flip) or ``"policy"`` (ATR-based trailing).
     """
+    # Defaults tuned from 764K trial feature importance analysis:
+    # - sizing 14% (top 1% median, was 10%)
+    # - stop ATR 12x (shift up from 10)
+    # - TP at 0.75R closing 20% (was 1.0R / 30%)
+    # - pyramid 2 adds, 20 bar spacing (was 3 / 15)
     max_rpt = 15.0 if pyramid_enabled else 50.0
     stop_cfg: dict = (
         {"model": "firestorm_tm"}
         if stop_model == "firestorm_tm"
-        else {"model": "atr", "atr_multiple": 10.0}
+        else {"model": "atr", "atr_multiple": 12.0}
     )
     data: dict = {
         "archetype": name,
@@ -41,7 +46,7 @@ def fullrisk_config(
         "commission_pct": 0.04,
         "sizing": {
             "model": "fixed_fractional",
-            "risk_pct": 10.0,
+            "risk_pct": 14.0,
             "max_risk_per_trade": max_rpt,
             "max_leverage": 1.0,
         },
@@ -49,9 +54,9 @@ def fullrisk_config(
         "trailing": {"model": "atr", "trailing_mode": trailing_mode, "atr_multiple": 10.0},
         "partial_tp": {
             "enabled": True,
-            "close_pct": 30.0,
+            "close_pct": 20.0,
             "trigger": "r_multiple",
-            "r_multiple": 1.0,
+            "r_multiple": 0.75,
         },
         "break_even": {
             "enabled": True,
@@ -60,8 +65,8 @@ def fullrisk_config(
         },
         "pyramid": {
             "enabled": pyramid_enabled,
-            "max_adds": 3,
-            "block_bars": 15,
+            "max_adds": 2,
+            "block_bars": 20,
             "threshold_factor": 1.01,
         },
         "time_exit": {

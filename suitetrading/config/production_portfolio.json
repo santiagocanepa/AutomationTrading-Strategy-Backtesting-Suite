@@ -1,0 +1,292 @@
+{
+  "version": "v2_pruned",
+  "method": "equal_weight",
+  "n_strategies": 10,
+  "filters": {
+    "pbo_threshold": 0.15,
+    "stability_quarters": 3,
+    "slippage": true,
+    "exclude_1d": true,
+    "pruned_by_loo": true
+  },
+  "walk_forward": {
+    "oos_sharpe_ann": 4.83,
+    "oos_max_dd": 1.8,
+    "degradation_pct": -27.3,
+    "oos_positive": "10/10"
+  },
+  "strategies": [
+    {
+      "candidate_id": "0628610ef1e6",
+      "symbol": "BTCUSDT",
+      "timeframe": "4h",
+      "direction": "long",
+      "archetype": "roc_ssl_mtf",
+      "indicator_params": {
+        "roc": {
+          "period": 30,
+          "mode": "bullish",
+          "hold_bars": 2
+        },
+        "ssl_channel": {
+          "length": 3,
+          "hold_bars": 8
+        }
+      },
+      "risk_overrides": {
+        "stop__atr_multiple": 8.0,
+        "sizing__risk_pct": 5.0
+      },
+      "pbo": 0.02,
+      "slippage_pct": 0
+    },
+    {
+      "candidate_id": "0baed25d40e1",
+      "symbol": "SOLUSDT",
+      "timeframe": "4h",
+      "direction": "short",
+      "archetype": "macd_ssl",
+      "indicator_params": {
+        "macd": {
+          "fast": 35,
+          "slow": 93,
+          "signal": 43,
+          "mode": "bullish",
+          "hold_bars": 5
+        },
+        "ssl_channel": {
+          "length": 13,
+          "hold_bars": 19
+        }
+      },
+      "risk_overrides": {
+        "stop__atr_multiple": 9.0,
+        "sizing__risk_pct": 9.0
+      },
+      "pbo": 0.145,
+      "slippage_pct": 0
+    },
+    {
+      "candidate_id": "110535065b4d",
+      "symbol": "ETHUSDT",
+      "timeframe": "4h",
+      "direction": "long",
+      "archetype": "macd_fullrisk",
+      "indicator_params": {
+        "macd": {
+          "fast": 12,
+          "slow": 60,
+          "signal": 34,
+          "mode": "bullish",
+          "hold_bars": 8
+        },
+        "ssl_channel": {
+          "length": 49,
+          "hold_bars": 9
+        }
+      },
+      "risk_overrides": {
+        "stop__atr_multiple": 18.0,
+        "sizing__risk_pct": 24.0,
+        "partial_tp__r_multiple": 4.1000000000000005,
+        "partial_tp__close_pct": 40.0,
+        "break_even__buffer": 1.0061,
+        "break_even__r_multiple": 1.5
+      },
+      "pbo": 0.1428,
+      "slippage_pct": 0
+    },
+    {
+      "candidate_id": "14eb6ed0d735",
+      "symbol": "LINKUSDT",
+      "timeframe": "1h",
+      "direction": "long",
+      "archetype": "bband_fullrisk_pyr",
+      "indicator_params": {
+        "bollinger_bands": {
+          "period": 23,
+          "nbdev": 3.039577669596211,
+          "mode": "upper",
+          "hold_bars": 9
+        },
+        "ssl_channel": {
+          "length": 42,
+          "hold_bars": 15
+        }
+      },
+      "risk_overrides": {
+        "stop__atr_multiple": 15.0,
+        "sizing__risk_pct": 36.0,
+        "partial_tp__r_multiple": 4.0,
+        "partial_tp__close_pct": 40.0,
+        "break_even__buffer": 1.0090999999999999,
+        "break_even__r_multiple": 2.5,
+        "pyramid__max_adds": 1,
+        "pyramid__block_bars": 47,
+        "pyramid__threshold_factor": 1.038
+      },
+      "pbo": 0.0948,
+      "slippage_pct": 0
+    },
+    {
+      "candidate_id": "152823b56a80",
+      "symbol": "SOLUSDT",
+      "timeframe": "4h",
+      "direction": "short",
+      "archetype": "macd_fullrisk",
+      "indicator_params": {
+        "macd": {
+          "fast": 39,
+          "slow": 81,
+          "signal": 48,
+          "mode": "bullish",
+          "hold_bars": 8
+        },
+        "ssl_channel": {
+          "length": 9,
+          "hold_bars": 17
+        }
+      },
+      "risk_overrides": {
+        "stop__atr_multiple": 16.0,
+        "sizing__risk_pct": 15.0,
+        "partial_tp__r_multiple": 3.9,
+        "partial_tp__close_pct": 20.0,
+        "break_even__buffer": 1.0090999999999999,
+        "break_even__r_multiple": 0.5
+      },
+      "pbo": 0.0884,
+      "slippage_pct": 0
+    },
+    {
+      "candidate_id": "2d98ff3aa7bb",
+      "symbol": "BTCUSDT",
+      "timeframe": "1h",
+      "direction": "long",
+      "archetype": "ssl_ma",
+      "indicator_params": {
+        "ma_crossover": {
+          "fast_period": 20,
+          "slow_period": 83,
+          "mode": "bullish",
+          "hold_bars": 1
+        },
+        "ssl_channel": {
+          "length": 150,
+          "hold_bars": 2
+        }
+      },
+      "risk_overrides": {
+        "stop__atr_multiple": 12.0,
+        "sizing__risk_pct": 3.0
+      },
+      "pbo": 0.1034,
+      "slippage_pct": 0
+    },
+    {
+      "candidate_id": "2e45405cc8e4",
+      "symbol": "BTCUSDT",
+      "timeframe": "4h",
+      "direction": "short",
+      "archetype": "roc_mtf_roc",
+      "indicator_params": {
+        "roc": {
+          "period": 2,
+          "mode": "bullish",
+          "hold_bars": 1
+        }
+      },
+      "risk_overrides": {
+        "stop__atr_multiple": 19.0,
+        "sizing__risk_pct": 16.0
+      },
+      "pbo": 0.0198,
+      "slippage_pct": 0
+    },
+    {
+      "candidate_id": "4cf36f5691e0",
+      "symbol": "LINKUSDT",
+      "timeframe": "4h",
+      "direction": "long",
+      "archetype": "macd_ema_fullrisk_pyr",
+      "indicator_params": {
+        "macd": {
+          "fast": 17,
+          "slow": 36,
+          "signal": 37,
+          "mode": "bearish",
+          "hold_bars": 5
+        },
+        "ema": {
+          "period": 73,
+          "mode": "below",
+          "hold_bars": 6
+        },
+        "ssl_channel": {
+          "length": 155,
+          "hold_bars": 10
+        }
+      },
+      "risk_overrides": {
+        "stop__atr_multiple": 12.0,
+        "sizing__risk_pct": 22.0,
+        "partial_tp__r_multiple": 0.5,
+        "partial_tp__close_pct": 15.0,
+        "break_even__buffer": 1.0001,
+        "break_even__r_multiple": 2.25,
+        "pyramid__max_adds": 2,
+        "pyramid__block_bars": 27,
+        "pyramid__threshold_factor": 1.046
+      },
+      "pbo": 0.0556,
+      "slippage_pct": 0
+    },
+    {
+      "candidate_id": "6917887b8a9d",
+      "symbol": "SOLUSDT",
+      "timeframe": "4h",
+      "direction": "long",
+      "archetype": "roc_macd_mtf",
+      "indicator_params": {
+        "roc": {
+          "period": 2,
+          "mode": "bullish",
+          "hold_bars": 1
+        },
+        "macd": {
+          "fast": 3,
+          "slow": 10,
+          "signal": 35,
+          "mode": "bearish",
+          "hold_bars": 8
+        }
+      },
+      "risk_overrides": {
+        "stop__atr_multiple": 4.0,
+        "sizing__risk_pct": 14.0
+      },
+      "pbo": 0.0714,
+      "slippage_pct": 0
+    },
+    {
+      "candidate_id": "ac5f6cc0b3b7",
+      "symbol": "ETHUSDT",
+      "timeframe": "4h",
+      "direction": "short",
+      "archetype": "roc_shortopt",
+      "indicator_params": {
+        "roc": {
+          "period": 15,
+          "mode": "bullish",
+          "hold_bars": 2
+        }
+      },
+      "risk_overrides": {
+        "stop__atr_multiple": 20.0,
+        "sizing__risk_pct": 2.0
+      },
+      "pbo": 0.0,
+      "slippage_pct": 0
+    }
+  ]
+}

@@ -39,9 +39,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--evidence-dir", default=str(ROOT / "artifacts" / "discovery" / "evidence"))
     p.add_argument("--output-dir", default=str(ROOT / "artifacts" / "portfolio"))
     p.add_argument("--target-count", type=int, default=100)
-    p.add_argument("--max-avg-corr", type=float, default=0.30)
+    p.add_argument("--max-avg-corr", type=float, default=0.60)
+    p.add_argument("--max-per-archetype", type=int, default=5)
+    p.add_argument("--max-per-asset-tf", type=int, default=4)
     p.add_argument("--methods", nargs="+",
-                   default=["equal", "min_variance", "risk_parity", "kelly", "shrinkage_kelly"])
+                   default=["equal", "shrinkage_kelly"])
     p.add_argument("--rebalance", default="none",
                    choices=["none", "daily", "weekly", "monthly"])
     p.add_argument("--initial-capital", type=float, default=100_000.0)
@@ -96,7 +98,9 @@ def main() -> None:
     selector = StrategySelector(
         target_count=args.target_count,
         max_avg_corr=args.max_avg_corr,
-        min_sharpe=0.0,  # Only select strategies with positive Sharpe
+        max_per_archetype=args.max_per_archetype,
+        max_per_asset_tf=args.max_per_asset_tf,
+        min_sharpe=0.0,
     )
     selected = selector.select(equity_curves, metadata)
     logger.info("Selected {} strategies", len(selected))

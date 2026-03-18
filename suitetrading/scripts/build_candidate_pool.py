@@ -31,6 +31,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from suitetrading.backtesting._internal.datasets import build_dataset_from_df
 from suitetrading.backtesting.engine import BacktestEngine
 from suitetrading.backtesting.metrics import MetricsEngine
+from suitetrading.backtesting.slippage import estimate_slippage_pct
 from suitetrading.config.archetypes import get_auxiliary_indicators
 from suitetrading.data.resampler import OHLCVResampler
 from suitetrading.data.storage import ParquetStore
@@ -51,6 +52,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--months", type=int, default=36)
     p.add_argument("--commission", type=float, default=0.04)
     p.add_argument("--mode", default="fsm")
+    p.add_argument("--apply-slippage", action="store_true", default=True,
+                   help="Apply realistic TF-aware slippage (default: True)")
+    p.add_argument("--no-slippage", dest="apply_slippage", action="store_false")
     return p.parse_args()
 
 
@@ -256,12 +260,18 @@ def main() -> None:
                     commission_pct=args.commission,
                 )
 
-                result = objective.run_single({
+                flat_params = {
                     **{f"{ind}__{p}": v
                        for ind, params in indicator_params.items()
                        for p, v in params.items()},
                     **risk_overrides_flat,
-                })
+                }
+
+                # Apply slippage if enabled
+                if args.apply_slippage:
+                    flat_params["slippage_pct"] = estimate_slippage_pct(symbol, tf)
+
+                result = objective.run_single(flat_params)
 
                 eq = result["equity_curve"]
                 metrics = result["metrics"]

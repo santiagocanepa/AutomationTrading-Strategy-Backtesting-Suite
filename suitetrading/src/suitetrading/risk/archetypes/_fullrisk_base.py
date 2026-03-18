@@ -15,10 +15,25 @@ def fullrisk_config(
     *,
     pyramid_enabled: bool = False,
     time_exit_enabled: bool = False,
+    stop_model: str = "atr",
+    trailing_mode: str = "signal",
     overrides: dict,
 ) -> RiskConfig:
-    """Build a fullrisk RiskConfig with optional pyramid/time_exit."""
+    """Build a fullrisk RiskConfig with optional pyramid/time_exit/stop_model/trailing_mode.
+
+    Parameters
+    ----------
+    stop_model
+        ``"atr"`` (default ATR-based) or ``"firestorm_tm"`` (dynamic bands).
+    trailing_mode
+        ``"signal"`` (exit on indicator flip) or ``"policy"`` (ATR-based trailing).
+    """
     max_rpt = 15.0 if pyramid_enabled else 50.0
+    stop_cfg: dict = (
+        {"model": "firestorm_tm"}
+        if stop_model == "firestorm_tm"
+        else {"model": "atr", "atr_multiple": 10.0}
+    )
     data: dict = {
         "archetype": name,
         "direction": "both",
@@ -30,8 +45,8 @@ def fullrisk_config(
             "max_risk_per_trade": max_rpt,
             "max_leverage": 1.0,
         },
-        "stop": {"model": "atr", "atr_multiple": 10.0},
-        "trailing": {"model": "atr", "trailing_mode": "signal", "atr_multiple": 10.0},
+        "stop": stop_cfg,
+        "trailing": {"model": "atr", "trailing_mode": trailing_mode, "atr_multiple": 10.0},
         "partial_tp": {
             "enabled": True,
             "close_pct": 30.0,

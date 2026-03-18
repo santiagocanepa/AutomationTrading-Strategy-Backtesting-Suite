@@ -30,6 +30,9 @@ SYMBOL_START_DATES: dict[str, date] = {
     "BTCUSDT": date(2017, 8, 17),
     "ETHUSDT": date(2017, 8, 17),
     "SOLUSDT": date(2020, 8, 11),
+    "BNBUSDT": date(2017, 11, 6),
+    "AVAXUSDT": date(2020, 9, 22),
+    "LINKUSDT": date(2019, 1, 16),
     # Alpaca stocks — default to 5 years of history
     "AAPL": date(2019, 1, 1),
     "SPY": date(2019, 1, 1),

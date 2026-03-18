@@ -69,7 +69,7 @@ from suitetrading.config.archetypes import (
 )
 
 ALL_TIMEFRAMES = ["15m", "1h", "4h", "1d"]
-ALL_SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+ALL_SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "AVAXUSDT", "LINKUSDT"]
 ALL_ARCHETYPES = list(ARCHETYPE_INDICATORS.keys())
 
 
@@ -111,6 +111,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--dsr-alpha", type=float, default=0.05)
     p.add_argument("--pbo-threshold", type=float, default=0.50,
                    help="Maximum PBO for a strategy to pass CSCV (default 0.50)")
+    p.add_argument("--factory-mode", action="store_true",
+                   help="Use archetype factory for combinatorial discovery")
+    p.add_argument("--factory-pruning-trials", type=int, default=50,
+                   help="Trials for Phase 1 factory pruning (quick filter)")
     return p.parse_args()
 
 
@@ -412,6 +416,28 @@ def run_wfo_and_filter(
 # ── Main ──────────────────────────────────────────────────────────────
 
 
+def _load_factory_archetypes(args: argparse.Namespace) -> None:
+    """Register factory-generated archetypes when --factory-mode is active."""
+    from suitetrading.risk.archetypes._factory import generate_factory_archetypes
+    from suitetrading.risk.archetypes import ARCHETYPE_REGISTRY
+
+    registry_add, indicator_add = generate_factory_archetypes()
+    # Merge into existing registries (skip duplicates)
+    new_count = 0
+    for name, cls in registry_add.items():
+        if name not in ARCHETYPE_REGISTRY:
+            ARCHETYPE_REGISTRY[name] = cls
+            new_count += 1
+    for name, cfg in indicator_add.items():
+        if name not in ARCHETYPE_INDICATORS:
+            ARCHETYPE_INDICATORS[name] = cfg
+    logger.info("Factory mode: registered {} new archetypes", new_count)
+
+    # Override archetypes list with all available
+    if not args.archetypes or args.archetypes == ALL_ARCHETYPES:
+        args.archetypes = list(ARCHETYPE_INDICATORS.keys())
+
+
 def main() -> None:
     args = parse_args()
     output_dir = Path(args.output_dir)
@@ -421,6 +447,9 @@ def main() -> None:
 
     for d in [studies_dir, results_dir, evidence_dir]:
         d.mkdir(parents=True, exist_ok=True)
+
+    if args.factory_mode:
+        _load_factory_archetypes(args)
 
     total_studies = (
         len(args.symbols) * len(args.timeframes)

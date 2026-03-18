@@ -95,6 +95,43 @@ from suitetrading.risk.archetypes.macd_fullrisk_pyr_mtf import _Arch as MacdFull
 from suitetrading.risk.archetypes.roc_adx_fullrisk_pyr_mtf import _Arch as RocAdxFullriskPyrMtf
 from suitetrading.risk.archetypes.macd_fullrisk_time import _Arch as MacdFullriskTime
 from suitetrading.risk.archetypes.macd_fullrisk_all import _Arch as MacdFullriskAll
+from suitetrading.risk.archetypes.ssl_fullrisk_pyr import _Arch as SslFullriskPyr
+from suitetrading.risk.archetypes.wt_fullrisk_pyr import _Arch as WtFullriskPyr
+from suitetrading.risk.archetypes.bband_fullrisk_pyr import _Arch as BbandFullriskPyr
+from suitetrading.risk.archetypes.roc_fullrisk_htf_macd import _Arch as RocFullriskHtfMacd
+from suitetrading.risk.archetypes.roc_fullrisk_pyr_htf_macd import _Arch as RocFullriskPyrHtfMacd
+from suitetrading.risk.archetypes.macd_fullrisk_htf_ema import _Arch as MacdFullriskHtfEma
+
+# ── Sprint 8: FTM stop variants ─────────────────────────────────────
+from suitetrading.risk.archetypes.roc_fullrisk_pyr_ftm import _Arch as RocFullriskPyrFtm
+from suitetrading.risk.archetypes.macd_fullrisk_pyr_ftm import _Arch as MacdFullriskPyrFtm
+from suitetrading.risk.archetypes.ma_x_fullrisk_pyr_ftm import _Arch as MaXFullriskPyrFtm
+from suitetrading.risk.archetypes.roc_fullrisk_pyr_mtf_ftm import _Arch as RocFullriskPyrMtfFtm
+from suitetrading.risk.archetypes.donchian_fullrisk_pyr_ftm import _Arch as DonchianFullriskPyrFtm
+from suitetrading.risk.archetypes.ema_fullrisk_pyr_ftm import _Arch as EmaFullriskPyrFtm
+from suitetrading.risk.archetypes.rsi_fullrisk_pyr_ftm import _Arch as RsiFullriskPyrFtm
+from suitetrading.risk.archetypes.roc_macd_fullrisk_pyr_ftm import _Arch as RocMacdFullriskPyrFtm
+from suitetrading.risk.archetypes.roc_ema_fullrisk_pyr_ftm import _Arch as RocEmaFullriskPyrFtm
+from suitetrading.risk.archetypes.macd_ema_fullrisk_pyr_ftm import _Arch as MacdEmaFullriskPyrFtm
+# ── Sprint 8: Trailing policy variants ──────────────────────────────
+from suitetrading.risk.archetypes.roc_fullrisk_pyr_trail_policy import _Arch as RocFullriskPyrTrailPolicy
+from suitetrading.risk.archetypes.macd_fullrisk_pyr_trail_policy import _Arch as MacdFullriskPyrTrailPolicy
+from suitetrading.risk.archetypes.ma_x_fullrisk_pyr_trail_policy import _Arch as MaXFullriskPyrTrailPolicy
+from suitetrading.risk.archetypes.roc_fullrisk_pyr_mtf_trail_policy import _Arch as RocFullriskPyrMtfTrailPolicy
+from suitetrading.risk.archetypes.donchian_fullrisk_pyr_trail_policy import _Arch as DonchianFullriskPyrTrailPolicy
+# ── Sprint 9: New indicator archetypes ──────────────────────────────
+from suitetrading.risk.archetypes.squeeze_fullrisk_pyr import _Arch as SqueezeFullriskPyr
+from suitetrading.risk.archetypes.stochrsi_fullrisk_pyr import _Arch as StochrsiFullriskPyr
+from suitetrading.risk.archetypes.ichimoku_fullrisk_pyr import _Arch as IchimokuFullriskPyr
+from suitetrading.risk.archetypes.obv_fullrisk_pyr import _Arch as ObvFullriskPyr
+from suitetrading.risk.archetypes.squeeze_roc_fullrisk_pyr import _Arch as SqueezeRocFullriskPyr
+from suitetrading.risk.archetypes.ichimoku_macd_fullrisk_pyr import _Arch as IchimokuMacdFullriskPyr
+from suitetrading.risk.archetypes.stochrsi_ema_fullrisk_pyr import _Arch as StochrsiEmaFullriskPyr
+from suitetrading.risk.archetypes.squeeze_fullrisk_pyr_mtf import _Arch as SqueezeFullriskPyrMtf
+from suitetrading.risk.archetypes.ichimoku_fullrisk_pyr_mtf import _Arch as IchimokuFullriskPyrMtf
+from suitetrading.risk.archetypes.obv_roc_fullrisk_pyr import _Arch as ObvRocFullriskPyr
+from suitetrading.risk.archetypes.squeeze_ssl_fullrisk_pyr import _Arch as SqueezeSslFullriskPyr
+from suitetrading.risk.archetypes.ichimoku_ssl_fullrisk_pyr import _Arch as IchimokuSslFullriskPyr
 
 ARCHETYPE_REGISTRY: dict[str, type[RiskArchetype]] = {
     "legacy_firestorm": LegacyFirestormProfile,
@@ -181,6 +218,42 @@ ARCHETYPE_REGISTRY: dict[str, type[RiskArchetype]] = {
     "roc_adx_fullrisk_pyr_mtf": RocAdxFullriskPyrMtf,
     "macd_fullrisk_time": MacdFullriskTime,
     "macd_fullrisk_all": MacdFullriskAll,
+    "ssl_fullrisk_pyr": SslFullriskPyr,
+    "wt_fullrisk_pyr": WtFullriskPyr,
+    "bband_fullrisk_pyr": BbandFullriskPyr,
+    "roc_fullrisk_htf_macd": RocFullriskHtfMacd,
+    "roc_fullrisk_pyr_htf_macd": RocFullriskPyrHtfMacd,
+    "macd_fullrisk_htf_ema": MacdFullriskHtfEma,
+    # Sprint 8: FTM stop variants
+    "roc_fullrisk_pyr_ftm": RocFullriskPyrFtm,
+    "macd_fullrisk_pyr_ftm": MacdFullriskPyrFtm,
+    "ma_x_fullrisk_pyr_ftm": MaXFullriskPyrFtm,
+    "roc_fullrisk_pyr_mtf_ftm": RocFullriskPyrMtfFtm,
+    "donchian_fullrisk_pyr_ftm": DonchianFullriskPyrFtm,
+    "ema_fullrisk_pyr_ftm": EmaFullriskPyrFtm,
+    "rsi_fullrisk_pyr_ftm": RsiFullriskPyrFtm,
+    "roc_macd_fullrisk_pyr_ftm": RocMacdFullriskPyrFtm,
+    "roc_ema_fullrisk_pyr_ftm": RocEmaFullriskPyrFtm,
+    "macd_ema_fullrisk_pyr_ftm": MacdEmaFullriskPyrFtm,
+    # Sprint 8: Trailing policy variants
+    "roc_fullrisk_pyr_trail_policy": RocFullriskPyrTrailPolicy,
+    "macd_fullrisk_pyr_trail_policy": MacdFullriskPyrTrailPolicy,
+    "ma_x_fullrisk_pyr_trail_policy": MaXFullriskPyrTrailPolicy,
+    "roc_fullrisk_pyr_mtf_trail_policy": RocFullriskPyrMtfTrailPolicy,
+    "donchian_fullrisk_pyr_trail_policy": DonchianFullriskPyrTrailPolicy,
+    # Sprint 9: New indicator archetypes
+    "squeeze_fullrisk_pyr": SqueezeFullriskPyr,
+    "stochrsi_fullrisk_pyr": StochrsiFullriskPyr,
+    "ichimoku_fullrisk_pyr": IchimokuFullriskPyr,
+    "obv_fullrisk_pyr": ObvFullriskPyr,
+    "squeeze_roc_fullrisk_pyr": SqueezeRocFullriskPyr,
+    "ichimoku_macd_fullrisk_pyr": IchimokuMacdFullriskPyr,
+    "stochrsi_ema_fullrisk_pyr": StochrsiEmaFullriskPyr,
+    "squeeze_fullrisk_pyr_mtf": SqueezeFullriskPyrMtf,
+    "ichimoku_fullrisk_pyr_mtf": IchimokuFullriskPyrMtf,
+    "obv_roc_fullrisk_pyr": ObvRocFullriskPyr,
+    "squeeze_ssl_fullrisk_pyr": SqueezeSslFullriskPyr,
+    "ichimoku_ssl_fullrisk_pyr": IchimokuSslFullriskPyr,
 }
 
 

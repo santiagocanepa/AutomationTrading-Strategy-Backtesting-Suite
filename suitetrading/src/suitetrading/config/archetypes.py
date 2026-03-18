@@ -553,6 +553,183 @@ ARCHETYPE_INDICATORS: dict[str, ArchetypeIndicators] = {
         "exit": ["macd"], "trailing": ["ssl_channel"],
         "combination_mode": "excluyente",
     },
+    # ── New indicators with fullrisk + pyramid ──
+    "ssl_fullrisk_pyr": {
+        "entry": ["ssl_channel"], "auxiliary": [],
+        "exit": ["ssl_channel"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "wt_fullrisk_pyr": {
+        "entry": ["wavetrend_reversal"], "auxiliary": ["ssl_channel"],
+        "exit": ["wavetrend_reversal"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "bband_fullrisk_pyr": {
+        "entry": ["bollinger_bands"], "auxiliary": ["ssl_channel"],
+        "exit": ["bollinger_bands"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    # ── Alternative HTF filters ──
+    "roc_fullrisk_htf_macd": {
+        "entry": ["roc"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+        "htf_filter": "macd", "htf_timeframe": "1d",
+    },
+    "roc_fullrisk_pyr_htf_macd": {
+        "entry": ["roc"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+        "htf_filter": "macd", "htf_timeframe": "1d",
+    },
+    "macd_fullrisk_htf_ema": {
+        "entry": ["macd"], "auxiliary": ["ssl_channel"],
+        "exit": ["macd"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+        "htf_filter": "ema", "htf_timeframe": "1d",
+    },
+    # ══ Sprint 8: FTM stop variants (firestorm_tm as auxiliary) ══════
+    "roc_fullrisk_pyr_ftm": {
+        "entry": ["roc"], "auxiliary": ["ssl_channel", "firestorm_tm"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "macd_fullrisk_pyr_ftm": {
+        "entry": ["macd"], "auxiliary": ["ssl_channel", "firestorm_tm"],
+        "exit": ["macd"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ma_x_fullrisk_pyr_ftm": {
+        "entry": ["ma_crossover"], "auxiliary": ["ssl_channel", "firestorm_tm"],
+        "exit": ["ma_crossover"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_fullrisk_pyr_mtf_ftm": {
+        "entry": ["roc"], "auxiliary": ["ssl_channel", "firestorm_tm"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+        "htf_filter": "ma_crossover", "htf_timeframe": "1d",
+    },
+    "donchian_fullrisk_pyr_ftm": {
+        "entry": ["donchian"], "auxiliary": ["ssl_channel", "firestorm_tm"],
+        "exit": ["donchian"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ema_fullrisk_pyr_ftm": {
+        "entry": ["ema"], "auxiliary": ["ssl_channel", "firestorm_tm"],
+        "exit": ["ema"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "rsi_fullrisk_pyr_ftm": {
+        "entry": ["rsi"], "auxiliary": ["ssl_channel", "firestorm_tm"],
+        "exit": ["rsi"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_macd_fullrisk_pyr_ftm": {
+        "entry": ["roc", "macd"], "auxiliary": ["ssl_channel", "firestorm_tm"],
+        "exit": ["roc", "macd"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_ema_fullrisk_pyr_ftm": {
+        "entry": ["roc", "ema"], "auxiliary": ["ssl_channel", "firestorm_tm"],
+        "exit": ["roc", "ema"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "macd_ema_fullrisk_pyr_ftm": {
+        "entry": ["macd", "ema"], "auxiliary": ["ssl_channel", "firestorm_tm"],
+        "exit": ["macd", "ema"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    # ── Sprint 8: Trailing policy variants (ATR-based trailing) ──────
+    "roc_fullrisk_pyr_trail_policy": {
+        "entry": ["roc"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "macd_fullrisk_pyr_trail_policy": {
+        "entry": ["macd"], "auxiliary": ["ssl_channel"],
+        "exit": ["macd"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ma_x_fullrisk_pyr_trail_policy": {
+        "entry": ["ma_crossover"], "auxiliary": ["ssl_channel"],
+        "exit": ["ma_crossover"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_fullrisk_pyr_mtf_trail_policy": {
+        "entry": ["roc"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+        "htf_filter": "ma_crossover", "htf_timeframe": "1d",
+    },
+    "donchian_fullrisk_pyr_trail_policy": {
+        "entry": ["donchian"], "auxiliary": ["ssl_channel"],
+        "exit": ["donchian"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    # ══ Sprint 9: New indicator archetypes ═══════════════════════════
+    "squeeze_fullrisk_pyr": {
+        "entry": ["squeeze"], "auxiliary": ["ssl_channel"],
+        "exit": ["squeeze"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "stochrsi_fullrisk_pyr": {
+        "entry": ["stoch_rsi"], "auxiliary": ["ssl_channel"],
+        "exit": ["stoch_rsi"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ichimoku_fullrisk_pyr": {
+        "entry": ["ichimoku"], "auxiliary": ["ssl_channel"],
+        "exit": ["ichimoku"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "obv_fullrisk_pyr": {
+        "entry": ["obv"], "auxiliary": ["ssl_channel"],
+        "exit": ["obv"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "squeeze_roc_fullrisk_pyr": {
+        "entry": ["squeeze", "roc"], "auxiliary": ["ssl_channel"],
+        "exit": ["squeeze", "roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ichimoku_macd_fullrisk_pyr": {
+        "entry": ["ichimoku", "macd"], "auxiliary": ["ssl_channel"],
+        "exit": ["ichimoku", "macd"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "stochrsi_ema_fullrisk_pyr": {
+        "entry": ["stoch_rsi", "ema"], "auxiliary": ["ssl_channel"],
+        "exit": ["stoch_rsi", "ema"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "squeeze_fullrisk_pyr_mtf": {
+        "entry": ["squeeze"], "auxiliary": ["ssl_channel"],
+        "exit": ["squeeze"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+        "htf_filter": "ma_crossover", "htf_timeframe": "1d",
+    },
+    "ichimoku_fullrisk_pyr_mtf": {
+        "entry": ["ichimoku"], "auxiliary": ["ssl_channel"],
+        "exit": ["ichimoku"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+        "htf_filter": "ma_crossover", "htf_timeframe": "1d",
+    },
+    "obv_roc_fullrisk_pyr": {
+        "entry": ["obv", "roc"], "auxiliary": ["ssl_channel"],
+        "exit": ["obv", "roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "squeeze_ssl_fullrisk_pyr": {
+        "entry": ["squeeze"], "auxiliary": ["ssl_channel"],
+        "exit": ["squeeze"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ichimoku_ssl_fullrisk_pyr": {
+        "entry": ["ichimoku"], "auxiliary": ["ssl_channel"],
+        "exit": ["ichimoku"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
 }
 
 

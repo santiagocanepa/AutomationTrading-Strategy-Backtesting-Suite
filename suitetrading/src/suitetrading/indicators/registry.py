@@ -33,6 +33,12 @@ from suitetrading.indicators.standard.momentum import (
     ROC,
 )
 
+# ── Phase 3 indicators ───────────────────────────────────────────────
+from suitetrading.indicators.standard.squeeze import SqueezeMomentum
+from suitetrading.indicators.standard.stoch_rsi import StochRSI as StochasticRSI
+from suitetrading.indicators.standard.ichimoku import IchimokuTKCross
+from suitetrading.indicators.standard.obv import OBVTrend
+
 INDICATOR_REGISTRY: dict[str, type[Indicator]] = {
     # Custom
     "firestorm": Firestorm,
@@ -53,6 +59,11 @@ INDICATOR_REGISTRY: dict[str, type[Indicator]] = {
     "donchian": DonchianBreakout,
     "adx_filter": ADXFilter,
     "ma_crossover": MACrossover,
+    # Phase 3
+    "squeeze": SqueezeMomentum,
+    "stoch_rsi": StochasticRSI,
+    "ichimoku": IchimokuTKCross,
+    "obv": OBVTrend,
 }
 
 

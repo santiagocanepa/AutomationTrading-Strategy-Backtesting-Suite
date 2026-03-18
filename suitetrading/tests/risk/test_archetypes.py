@@ -21,7 +21,7 @@ from suitetrading.risk.contracts import RiskConfig
 
 
 class TestRegistry:
-    def test_all_six_registered(self):
+    def test_all_registered(self):
         expected = {
             "legacy_firestorm", "trend_following", "mean_reversion",
             "mixed", "pyramidal", "grid_dca", "momentum", "breakout",
@@ -52,6 +52,24 @@ class TestRegistry:
             "roc_adx_fullrisk_pyr",
             "macd_fullrisk_pyr_mtf", "roc_adx_fullrisk_pyr_mtf",
             "macd_fullrisk_time", "macd_fullrisk_all",
+            "ssl_fullrisk_pyr", "wt_fullrisk_pyr", "bband_fullrisk_pyr",
+            "roc_fullrisk_htf_macd", "roc_fullrisk_pyr_htf_macd", "macd_fullrisk_htf_ema",
+            # Sprint 8: FTM stop variants
+            "roc_fullrisk_pyr_ftm", "macd_fullrisk_pyr_ftm", "ma_x_fullrisk_pyr_ftm",
+            "roc_fullrisk_pyr_mtf_ftm", "donchian_fullrisk_pyr_ftm",
+            "ema_fullrisk_pyr_ftm", "rsi_fullrisk_pyr_ftm",
+            "roc_macd_fullrisk_pyr_ftm", "roc_ema_fullrisk_pyr_ftm", "macd_ema_fullrisk_pyr_ftm",
+            # Sprint 8: Trailing policy variants
+            "roc_fullrisk_pyr_trail_policy", "macd_fullrisk_pyr_trail_policy",
+            "ma_x_fullrisk_pyr_trail_policy", "roc_fullrisk_pyr_mtf_trail_policy",
+            "donchian_fullrisk_pyr_trail_policy",
+            # Sprint 9: New indicator archetypes
+            "squeeze_fullrisk_pyr", "stochrsi_fullrisk_pyr",
+            "ichimoku_fullrisk_pyr", "obv_fullrisk_pyr",
+            "squeeze_roc_fullrisk_pyr", "ichimoku_macd_fullrisk_pyr",
+            "stochrsi_ema_fullrisk_pyr", "squeeze_fullrisk_pyr_mtf",
+            "ichimoku_fullrisk_pyr_mtf", "obv_roc_fullrisk_pyr",
+            "squeeze_ssl_fullrisk_pyr", "ichimoku_ssl_fullrisk_pyr",
         }
         assert set(ARCHETYPE_REGISTRY.keys()) == expected
 

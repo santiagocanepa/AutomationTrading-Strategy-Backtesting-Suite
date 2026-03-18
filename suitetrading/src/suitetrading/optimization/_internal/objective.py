@@ -50,6 +50,11 @@ _EXIT_INVERSION: dict[str, tuple[str, dict[str, str]]] = {
     "donchian":             ("mode", {"upper": "lower", "lower": "upper"}),
     "adx_filter":           ("mode", {"strong": "weak", "weak": "strong"}),
     "ma_crossover":         ("mode", {"bullish": "bearish", "bearish": "bullish"}),
+    # Phase 3
+    "squeeze":              ("mode", {"bullish": "bearish", "bearish": "bullish"}),
+    "stoch_rsi":            ("mode", {"oversold": "overbought", "overbought": "oversold"}),
+    "ichimoku":             ("mode", {"bullish": "bearish", "bearish": "bullish"}),
+    "obv":                  ("mode", {"bullish": "bearish", "bearish": "bullish"}),
 }
 
 

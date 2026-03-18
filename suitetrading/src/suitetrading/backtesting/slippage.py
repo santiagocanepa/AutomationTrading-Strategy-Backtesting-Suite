@@ -37,8 +37,37 @@ _TF_IMPACT_PCT: dict[str, float] = {
     "1d": 0.002,
 }
 
+# ── Stock spreads ────────────────────────────────────────────────────
+_BASE_SPREAD_PCT_STOCK: dict[str, float] = {
+    "SPY": 0.003,    # Ultra-liquid ETF
+    "QQQ": 0.003,
+    "IWM": 0.005,
+    "XLK": 0.005,
+    "XLF": 0.005,
+    "XLE": 0.008,
+    "GLD": 0.005,
+    "TLT": 0.005,
+    "AAPL": 0.003,
+    "MSFT": 0.003,
+    "NVDA": 0.005,
+    "TSLA": 0.008,
+    "AMZN": 0.005,
+}
+
+_TF_IMPACT_PCT_STOCK: dict[str, float] = {
+    "1m": 0.010,
+    "5m": 0.008,
+    "15m": 0.005,
+    "30m": 0.004,
+    "1h": 0.003,
+    "4h": 0.002,
+    "1d": 0.001,
+}
+
 _DEFAULT_SPREAD = 0.010
 _DEFAULT_IMPACT = 0.005
+_DEFAULT_SPREAD_STOCK = 0.005
+_DEFAULT_IMPACT_STOCK = 0.003
 
 
 def estimate_slippage_pct(
@@ -47,16 +76,18 @@ def estimate_slippage_pct(
 ) -> float:
     """Return estimated one-way slippage in percent.
 
+    Auto-detects crypto vs stock based on symbol name (USDT suffix = crypto).
+
     Total cost per trade = commission + slippage (applied on both entry and exit).
-
-    For a round trip (entry + exit):
-        total_cost ≈ 2 × (commission + slippage)
-
-    With commission = 0.04% and slippage = 0.01%:
-        round_trip_cost = 2 × (0.04 + 0.01) = 0.10% per trade
+    Stocks via Alpaca are commission-free, so slippage is the main cost.
     """
-    spread = _BASE_SPREAD_PCT.get(symbol, _DEFAULT_SPREAD)
-    impact = _TF_IMPACT_PCT.get(timeframe, _DEFAULT_IMPACT)
+    is_crypto = symbol.endswith("USDT") or symbol.endswith("USD")
+    if is_crypto:
+        spread = _BASE_SPREAD_PCT.get(symbol, _DEFAULT_SPREAD)
+        impact = _TF_IMPACT_PCT.get(timeframe, _DEFAULT_IMPACT)
+    else:
+        spread = _BASE_SPREAD_PCT_STOCK.get(symbol, _DEFAULT_SPREAD_STOCK)
+        impact = _TF_IMPACT_PCT_STOCK.get(timeframe, _DEFAULT_IMPACT_STOCK)
     return round(spread + impact, 4)
 
 

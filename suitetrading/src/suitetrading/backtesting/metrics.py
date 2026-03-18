@@ -41,7 +41,8 @@ class MetricsEngine:
         total_return_pct = (eq[-1] / initial_capital - 1.0) * 100.0
 
         tf = (context or {}).get("timeframe")
-        ann = _annualisation_factor(tf) if tf else np.sqrt(365 * 24)
+        market = (context or {}).get("market", "crypto")
+        ann = _annualisation_factor(tf, market=market) if tf else np.sqrt(365 * 24)
 
         sharpe = _sharpe(returns, annualisation=ann)
         sortino = _sortino(returns, annualisation=ann)
@@ -113,7 +114,8 @@ class MetricsEngine:
 
 # ── Annualisation helpers ──────────────────────────────────────────────
 
-_BARS_PER_YEAR: dict[str, int] = {
+# Crypto: 365 days × 24 hours (runs 24/7)
+_BARS_PER_YEAR_CRYPTO: dict[str, int] = {
     "1m": 365 * 24 * 60,
     "5m": 365 * 24 * 12,
     "15m": 365 * 24 * 4,
@@ -128,12 +130,28 @@ _BARS_PER_YEAR: dict[str, int] = {
     "1w": 52,
 }
 
+# Stocks: 252 trading days × 6.5 hours
+_BARS_PER_YEAR_STOCK: dict[str, int] = {
+    "1m": 252 * 390,       # 390 min/day
+    "5m": 252 * 78,
+    "15m": 252 * 26,
+    "30m": 252 * 13,
+    "1h": 252 * 7,         # ~6.5h but rounded
+    "4h": 252 * 2,         # ~1.6 per day
+    "1d": 252,
+    "1w": 52,
+}
 
-def _annualisation_factor(timeframe: str | None) -> float:
-    """Return sqrt(bars_per_year) for the given timeframe string."""
+# Default to crypto (backwards compatible)
+_BARS_PER_YEAR = _BARS_PER_YEAR_CRYPTO
+
+
+def _annualisation_factor(timeframe: str | None, market: str = "crypto") -> float:
+    """Return sqrt(bars_per_year) for the given timeframe and market type."""
     if timeframe is None:
         return float(np.sqrt(365 * 24))
-    bpy = _BARS_PER_YEAR.get(timeframe)
+    table = _BARS_PER_YEAR_STOCK if market == "stock" else _BARS_PER_YEAR_CRYPTO
+    bpy = table.get(timeframe)
     if bpy is None:
         return float(np.sqrt(365 * 24))
     return float(np.sqrt(bpy))

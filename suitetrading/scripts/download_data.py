@@ -38,12 +38,19 @@ SYMBOL_START_DATES: dict[str, date] = {
     "ADAUSDT": date(2018, 4, 17),
     "DOGEUSDT": date(2019, 7, 5),
     "XRPUSDT": date(2018, 5, 4),
-    # Alpaca stocks — default to 5 years of history
-    "AAPL": date(2019, 1, 1),
+    # Alpaca stocks — use 5-7 years of history
     "SPY": date(2019, 1, 1),
     "QQQ": date(2019, 1, 1),
+    "IWM": date(2019, 1, 1),
+    "AAPL": date(2019, 1, 1),
     "MSFT": date(2019, 1, 1),
     "AMZN": date(2019, 1, 1),
+    "NVDA": date(2019, 1, 1),
+    "TSLA": date(2019, 1, 1),
+    "GLD": date(2019, 1, 1),
+    "XLK": date(2019, 1, 1),
+    "XLE": date(2019, 1, 1),
+    "TLT": date(2019, 1, 1),
 }
 
 

@@ -64,9 +64,10 @@ class EMA(Indicator):
 
     def params_schema(self) -> dict[str, dict]:
         return {
-            "period": {"type": "int", "min": 2, "max": 600, "default": 21},
+            # Narrowed: period [2-200], hold_bars [1-5] (r=-0.076)
+            "period": {"type": "int", "min": 2, "max": 200, "default": 21},
             "mode": {"type": "str", "choices": ["above", "below"], "default": "above"},
-            "hold_bars": {"type": "int", "min": 1, "max": 10, "default": 3},
+            "hold_bars": {"type": "int", "min": 1, "max": 5, "default": 3},
         }
 
 
@@ -98,11 +99,12 @@ class MACD(Indicator):
 
     def params_schema(self) -> dict[str, dict]:
         return {
-            "fast": {"type": "int", "min": 2, "max": 50, "default": 12},
-            "slow": {"type": "int", "min": 5, "max": 100, "default": 26},
-            "signal": {"type": "int", "min": 2, "max": 50, "default": 9},
+            # Narrowed: fast [2-40] (top1% median=15), slow [5-80], hold [1-8]
+            "fast": {"type": "int", "min": 2, "max": 40, "default": 12},
+            "slow": {"type": "int", "min": 5, "max": 80, "default": 26},
+            "signal": {"type": "int", "min": 2, "max": 30, "default": 9},
             "mode": {"type": "str", "choices": ["bullish", "bearish"], "default": "bullish"},
-            "hold_bars": {"type": "int", "min": 1, "max": 10, "default": 3},
+            "hold_bars": {"type": "int", "min": 1, "max": 8, "default": 3},
         }
 
 
@@ -192,8 +194,9 @@ class BollingerBands(Indicator):
 
     def params_schema(self) -> dict[str, dict]:
         return {
-            "period": {"type": "int", "min": 5, "max": 100, "default": 20},
-            "nbdev": {"type": "float", "min": 0.5, "max": 5.0, "default": 2.0},
+            # Narrowed: nbdev [0.5-2.5] (top1% median=0.71, r=-0.144), hold [1-5]
+            "period": {"type": "int", "min": 5, "max": 50, "default": 20},
+            "nbdev": {"type": "float", "min": 0.5, "max": 2.5, "default": 1.0},
             "mode": {"type": "str", "choices": ["lower", "upper"], "default": "lower"},
-            "hold_bars": {"type": "int", "min": 1, "max": 10, "default": 3},
+            "hold_bars": {"type": "int", "min": 1, "max": 5, "default": 3},
         }

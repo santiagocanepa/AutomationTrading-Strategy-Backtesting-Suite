@@ -181,9 +181,10 @@ class SSLChannel(Indicator):
         return self._hold_bars(raw, hold_bars)
 
     def params_schema(self) -> dict[str, dict]:
+        # Narrowed: hold_bars [1-10], length [2-150] (top1% median=109, r=+0.049)
         return {
-            "length": {"type": "int", "min": 2, "max": 200, "default": 12},
-            "hold_bars": {"type": "int", "min": 1, "max": 20, "default": 4},
+            "length": {"type": "int", "min": 2, "max": 150, "default": 12},
+            "hold_bars": {"type": "int", "min": 1, "max": 10, "default": 4},
         }
 
 
@@ -206,5 +207,5 @@ class SSLChannelLow(Indicator):
 
     def params_schema(self) -> dict[str, dict]:
         return {
-            "length": {"type": "int", "min": 2, "max": 200, "default": 12},
+            "length": {"type": "int", "min": 2, "max": 150, "default": 12},
         }

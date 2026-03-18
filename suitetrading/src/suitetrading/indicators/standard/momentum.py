@@ -35,10 +35,11 @@ class ROC(Indicator):
         return self._hold_bars(raw_series, hold_bars)
 
     def params_schema(self) -> dict[str, dict]:
+        # Narrowed: hold_bars [1-6] from 764K trial analysis (r=-0.117, low is better)
         return {
-            "period": {"type": "int", "min": 2, "max": 50, "default": 5},
+            "period": {"type": "int", "min": 2, "max": 40, "default": 5},
             "mode": {"type": "str", "choices": ["bullish", "bearish"], "default": "bullish"},
-            "hold_bars": {"type": "int", "min": 1, "max": 10, "default": 1},
+            "hold_bars": {"type": "int", "min": 1, "max": 6, "default": 1},
         }
 
 
@@ -144,11 +145,12 @@ class ADXFilter(Indicator):
         return self._hold_bars(raw_series, hold_bars)
 
     def params_schema(self) -> dict[str, dict]:
+        # Narrowed: period [10-40] (top1% median=22), threshold [15-45], hold [1-5]
         return {
-            "period": {"type": "int", "min": 5, "max": 50, "default": 14},
-            "threshold": {"type": "float", "min": 10.0, "max": 50.0, "default": 20.0},
+            "period": {"type": "int", "min": 10, "max": 40, "default": 14},
+            "threshold": {"type": "float", "min": 15.0, "max": 45.0, "default": 25.0},
             "mode": {"type": "str", "choices": ["strong", "weak"], "default": "strong"},
-            "hold_bars": {"type": "int", "min": 1, "max": 10, "default": 1},
+            "hold_bars": {"type": "int", "min": 1, "max": 5, "default": 1},
         }
 
 
@@ -157,8 +159,8 @@ class MACrossover(Indicator):
 
     def compute(self, df: pd.DataFrame, **params: int | float | str | bool) -> pd.Series:
         self._validate_ohlcv(df)
-        fast = int(params.get("fast_period", 50))
-        slow = int(params.get("slow_period", 200))
+        fast = int(params.get("fast_period", 10))
+        slow = int(params.get("slow_period", 100))
         mode = str(params.get("mode", "bullish"))
         hold_bars = int(params.get("hold_bars", 1))
 
@@ -177,9 +179,10 @@ class MACrossover(Indicator):
         return self._hold_bars(raw_series, hold_bars)
 
     def params_schema(self) -> dict[str, dict]:
+        # Narrowed: fast [5-20] (top1% median=8), slow [20-250], hold [1-5]
         return {
-            "fast_period": {"type": "int", "min": 5, "max": 100, "default": 50},
-            "slow_period": {"type": "int", "min": 20, "max": 500, "default": 200},
+            "fast_period": {"type": "int", "min": 5, "max": 20, "default": 10},
+            "slow_period": {"type": "int", "min": 20, "max": 250, "default": 100},
             "mode": {"type": "str", "choices": ["bullish", "bearish"], "default": "bullish"},
-            "hold_bars": {"type": "int", "min": 1, "max": 10, "default": 1},
+            "hold_bars": {"type": "int", "min": 1, "max": 5, "default": 1},
         }

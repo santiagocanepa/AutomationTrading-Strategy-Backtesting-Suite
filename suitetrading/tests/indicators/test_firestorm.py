@@ -180,10 +180,10 @@ class TestFirestormTMIndicator:
 
     def test_long_returns_up_band(self, sample_ohlcv):
         ind = FirestormTM()
-        up_band = ind.compute(sample_ohlcv, direction="long")
+        up_band = ind.compute(sample_ohlcv, direction="long", period=9, multiplier=0.9)
         result = firestorm(
             sample_ohlcv["open"], sample_ohlcv["high"],
             sample_ohlcv["low"], sample_ohlcv["close"],
-            period=9, multiplier=1.8,
+            period=9, multiplier=0.9,
         )
         pd.testing.assert_series_equal(up_band, result["up"], check_names=False)

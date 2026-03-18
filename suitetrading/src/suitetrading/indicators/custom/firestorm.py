@@ -179,10 +179,12 @@ class Firestorm(Indicator):
         return self._hold_bars(raw, hold_bars)
 
     def params_schema(self) -> dict[str, dict]:
+        # Narrowed: multiplier [0.5-1.5] (top1% optimal ~0.9, r=-0.302)
+        # hold_bars [1-10] (top1% mean ~14 but r=-0.233, low is better)
         return {
-            "period": {"type": "int", "min": 2, "max": 100, "default": 10},
-            "multiplier": {"type": "float", "min": 0.5, "max": 5.0, "default": 1.8},
-            "hold_bars": {"type": "int", "min": 1, "max": 20, "default": 1},
+            "period": {"type": "int", "min": 2, "max": 50, "default": 10},
+            "multiplier": {"type": "float", "min": 0.5, "max": 1.5, "default": 0.9},
+            "hold_bars": {"type": "int", "min": 1, "max": 10, "default": 1},
         }
 
 
@@ -198,7 +200,7 @@ class FirestormTM(Indicator):
         df: pd.DataFrame,
         *,
         period: int = 9,
-        multiplier: float = 1.8,
+        multiplier: float = 0.9,
         direction: str = "long",
     ) -> pd.Series:
         self._validate_ohlcv(df)
@@ -207,7 +209,8 @@ class FirestormTM(Indicator):
         return result["up"] if direction == "long" else result["dn"]
 
     def params_schema(self) -> dict[str, dict]:
+        # Narrowed: multiplier [0.5-1.2] (top1% optimal [0.8-1.0])
         return {
-            "period": {"type": "int", "min": 2, "max": 100, "default": 9},
-            "multiplier": {"type": "float", "min": 0.5, "max": 5.0, "default": 1.8},
+            "period": {"type": "int", "min": 2, "max": 50, "default": 9},
+            "multiplier": {"type": "float", "min": 0.5, "max": 1.2, "default": 0.9},
         }

@@ -318,24 +318,32 @@ def run_simple_backtest(
     dataset: BacktestDataset,
     signals: StrategySignals,
     risk_config: RiskConfig,
+    direction: str = "long",
 ) -> BacktestResult:
     """Lightweight single-position backtest (no pyramiding, no partial TP).
 
     Faster than FSM for high-throughput screening of archetypes A/B.
     Uses vectorised numpy where possible with a thin bar loop for
-    stop-loss tracking.
+    stop-loss tracking.  Supports both long and short directions.
     """
     ohlcv = dataset.ohlcv
     n = len(ohlcv)
     if n == 0:
         return BacktestResult(equity_curve=np.array([]), final_equity=0.0)
 
+    is_short = direction == "short"
+
     opens = ohlcv["open"].values
     closes = ohlcv["close"].values
     highs = ohlcv["high"].values
     lows = ohlcv["low"].values
-    entries = signals.entry_long.values if signals.entry_long is not None else np.zeros(n, dtype=bool)
-    exits = signals.exit_long.values if signals.exit_long is not None else np.zeros(n, dtype=bool)
+
+    if is_short:
+        entries = signals.entry_short.values if signals.entry_short is not None else np.zeros(n, dtype=bool)
+        exits = signals.exit_short.values if signals.exit_short is not None else np.zeros(n, dtype=bool)
+    else:
+        entries = signals.entry_long.values if signals.entry_long is not None else np.zeros(n, dtype=bool)
+        exits = signals.exit_long.values if signals.exit_long is not None else np.zeros(n, dtype=bool)
 
     atr = _compute_atr(highs, lows, closes, period=14)
     slip = risk_config.slippage_pct
@@ -359,17 +367,28 @@ def run_simple_backtest(
         equity_curve[i] = equity
 
         if in_position:
-            # Gap-aware stop
-            if closes[i] <= stop_price or lows[i] <= stop_price:
-                fill = min(stop_price, opens[i])
-                if slip:
-                    fill *= (1 - slip / 100.0)
-                pnl = (fill - entry_price) * qty
+            # Gap-aware stop: direction-aware comparison
+            if is_short:
+                stop_hit = closes[i] >= stop_price or highs[i] >= stop_price
+            else:
+                stop_hit = closes[i] <= stop_price or lows[i] <= stop_price
+
+            if stop_hit:
+                if is_short:
+                    fill = max(stop_price, opens[i])
+                    if slip:
+                        fill *= (1 + slip / 100.0)
+                    pnl = (entry_price - fill) * qty
+                else:
+                    fill = min(stop_price, opens[i])
+                    if slip:
+                        fill *= (1 - slip / 100.0)
+                    pnl = (fill - entry_price) * qty
                 equity += pnl
                 exit_comm = abs(qty * fill) * commission / 100.0
                 equity -= exit_comm
                 trades.append(TradeRecord(
-                    entry_bar=entry_bar, exit_bar=i, direction="long",
+                    entry_bar=entry_bar, exit_bar=i, direction=direction,
                     entry_price=entry_price, exit_price=fill,
                     quantity=qty, pnl=pnl, exit_reason="SL",
                     commission=entry_comm + exit_comm,
@@ -378,13 +397,19 @@ def run_simple_backtest(
             elif exits[i]:
                 fill = closes[i]
                 if slip:
-                    fill *= (1 - slip / 100.0)
-                pnl = (fill - entry_price) * qty
+                    if is_short:
+                        fill *= (1 + slip / 100.0)
+                    else:
+                        fill *= (1 - slip / 100.0)
+                if is_short:
+                    pnl = (entry_price - fill) * qty
+                else:
+                    pnl = (fill - entry_price) * qty
                 equity += pnl
                 exit_comm = abs(qty * fill) * commission / 100.0
                 equity -= exit_comm
                 trades.append(TradeRecord(
-                    entry_bar=entry_bar, exit_bar=i, direction="long",
+                    entry_bar=entry_bar, exit_bar=i, direction=direction,
                     entry_price=entry_price, exit_price=fill,
                     quantity=qty, pnl=pnl, exit_reason="signal",
                     commission=entry_comm + exit_comm,
@@ -399,7 +424,10 @@ def run_simple_backtest(
                 stop_dist = atr[i] * atr_mult
             else:
                 stop_dist = entry_price * fixed_pct / 100.0
-            stop_price = entry_price - stop_dist
+            if is_short:
+                stop_price = entry_price + stop_dist
+            else:
+                stop_price = entry_price - stop_dist
             risk_amount = equity * risk_pct / 100.0
             qty = risk_amount / stop_dist if stop_dist > 0 else 0.0
             if qty > 0:

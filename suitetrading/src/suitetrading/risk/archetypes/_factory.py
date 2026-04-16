@@ -20,9 +20,15 @@ from suitetrading.risk.contracts import RiskConfig
 
 FACTORY_MATRIX: dict[str, list[Any]] = {
     "entries": [
+        # Classic momentum/trend
         "roc", "macd", "ema", "ssl_channel", "rsi", "donchian",
         "ma_crossover", "bollinger_bands",
+        # Phase 3
         "squeeze", "stoch_rsi", "ichimoku", "obv",
+        # Phase 5: regime & anomaly
+        "volume_spike", "momentum_divergence",
+        # Phase 5: futures/derivatives (fall back gracefully if no data)
+        "funding_rate", "oi_divergence", "long_short_ratio",
     ],
     "risk_variants": ["fullrisk", "fullrisk_pyr", "fullrisk_all"],
     "stop_models": ["atr", "firestorm_tm"],

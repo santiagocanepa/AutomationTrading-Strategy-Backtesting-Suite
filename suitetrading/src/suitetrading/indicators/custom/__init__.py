@@ -1,7 +1,7 @@
 """Custom indicator package.
 
-Currently implemented: Firestorm, SSL Channel, and WaveTrend variants.
-ASH, Squeeze Momentum, and Fibonacci MAI remain Sprint 2 deliverables.
+Implemented: Firestorm (+ TM), SSL Channel (+ Low), and WaveTrend (Reversal + Divergence).
+Squeeze Momentum is in standard/squeeze.py.
 """
 
 from suitetrading.indicators.custom.firestorm import Firestorm, FirestormTM, firestorm

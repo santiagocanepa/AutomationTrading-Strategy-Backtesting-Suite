@@ -12,7 +12,7 @@ from typing import Any
 import numpy as np
 from loguru import logger
 
-from suitetrading.risk.contracts import PortfolioLimits, RiskConfig
+from suitetrading.risk.contracts import PortfolioLimits
 from suitetrading.risk.portfolio import PortfolioRiskManager, PortfolioState
 
 

@@ -70,6 +70,28 @@ class TestRegistry:
             "stochrsi_ema_fullrisk_pyr", "squeeze_fullrisk_pyr_mtf",
             "ichimoku_fullrisk_pyr_mtf", "obv_roc_fullrisk_pyr",
             "squeeze_ssl_fullrisk_pyr", "ichimoku_ssl_fullrisk_pyr",
+            # Phase 5: regime-filtered & multi-feature archetypes
+            "roc_regime_fullrisk_pyr", "ema_regime_fullrisk_pyr",
+            "macd_regime_fullrisk_pyr", "donchian_regime_fullrisk_pyr",
+            "roc_volspike_fullrisk_pyr", "donchian_volspike_fullrisk_pyr",
+            "ema_volspike_fullrisk_pyr",
+            "divergence_fullrisk_pyr", "divergence_adx_fullrisk_pyr",
+            "roc_adx_regime_fullrisk_pyr", "roc_volspike_regime_fullrisk_pyr",
+            "ema_adx_regime_fullrisk_pyr",
+            "funding_reversal_fullrisk_pyr", "roc_oi_fullrisk_pyr",
+            "roc_funding_fullrisk_pyr", "roc_lsratio_fullrisk_pyr",
+            "roc_funding_regime_fullrisk_pyr", "roc_oi_regime_fullrisk_pyr",
+            # Tier-1 macro archetypes (6 entries × 3 macro filters)
+            "roc_macro_vrp_fullrisk_pyr", "roc_macro_yield_curve_fullrisk_pyr", "roc_macro_hurst_fullrisk_pyr",
+            "macd_macro_vrp_fullrisk_pyr", "macd_macro_yield_curve_fullrisk_pyr", "macd_macro_hurst_fullrisk_pyr",
+            "ema_macro_vrp_fullrisk_pyr", "ema_macro_yield_curve_fullrisk_pyr", "ema_macro_hurst_fullrisk_pyr",
+            "donchian_macro_vrp_fullrisk_pyr", "donchian_macro_yield_curve_fullrisk_pyr", "donchian_macro_hurst_fullrisk_pyr",
+            "divergence_macro_vrp_fullrisk_pyr", "divergence_macro_yield_curve_fullrisk_pyr", "divergence_macro_hurst_fullrisk_pyr",
+            "ssl_macro_vrp_fullrisk_pyr", "ssl_macro_yield_curve_fullrisk_pyr", "ssl_macro_hurst_fullrisk_pyr",
+            # Rich archetypes
+            "rich_stock",
+            "rich_spy", "rich_qqq", "rich_tsla", "rich_nvda", "rich_aapl",
+            "rich_gld", "rich_xlk", "rich_xle", "rich_tlt", "rich_iwm",
         }
         assert set(ARCHETYPE_REGISTRY.keys()) == expected
 

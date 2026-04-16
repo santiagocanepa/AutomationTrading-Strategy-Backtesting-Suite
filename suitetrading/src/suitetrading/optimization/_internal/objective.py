@@ -22,11 +22,12 @@ from suitetrading.indicators.registry import INDICATOR_REGISTRY, get_indicator
 from suitetrading.indicators.signal_combiner import combine_signals
 from suitetrading.config.archetypes import (
     get_combination_mode,
+    get_entry_indicators,
     get_exit_indicators,
     get_htf_filter,
     get_trailing_indicators,
 )
-from suitetrading.optimization._internal.schemas import ObjectiveResult
+from suitetrading.indicators.mtf import align_to_base, resample_ohlcv, resolve_timeframe
 from suitetrading.risk.archetypes import get_archetype
 from suitetrading.risk.contracts import RiskConfig
 
@@ -36,6 +37,7 @@ from suitetrading.risk.contracts import RiskConfig
 # Maps indicator name → (param_to_flip, {original_value: inverted_value}).
 # Custom indicators use "direction"; standard indicators use "mode".
 _EXIT_INVERSION: dict[str, tuple[str, dict[str, str]]] = {
+    "ash":                  ("signal_mode", {"bullish": "bearish", "bearish": "bullish"}),
     "ssl_channel":          ("direction", {"long": "short", "short": "long"}),
     "firestorm":            ("direction", {"long": "short", "short": "long"}),
     "wavetrend_reversal":   ("direction", {"long": "short", "short": "long"}),
@@ -55,7 +57,23 @@ _EXIT_INVERSION: dict[str, tuple[str, dict[str, str]]] = {
     "stoch_rsi":            ("mode", {"oversold": "overbought", "overbought": "oversold"}),
     "ichimoku":             ("mode", {"bullish": "bearish", "bearish": "bullish"}),
     "obv":                  ("mode", {"bullish": "bearish", "bearish": "bullish"}),
+    # Regime & anomaly
+    "volatility_regime":    ("mode", {"trending": "ranging", "ranging": "trending"}),
+    "volume_spike":         ("mode", {"bullish": "bearish", "bearish": "bullish"}),
+    "momentum_divergence":  ("mode", {"bullish": "bearish", "bearish": "bullish"}),
+    # Futures/derivatives
+    "funding_rate":         ("mode", {"reversal_long": "reversal_short", "reversal_short": "reversal_long"}),
+    "oi_divergence":        ("mode", {"bullish": "bearish", "bearish": "bullish"}),
+    "long_short_ratio":     ("mode", {"contrarian_long": "contrarian_short", "contrarian_short": "contrarian_long"}),
 }
+
+
+_META_PARAMS = frozenset({"__state", "__timeframe"})
+
+
+def _strip_meta(params: dict[str, Any]) -> dict[str, Any]:
+    """Remove meta-params (__state, __timeframe) from indicator params."""
+    return {k: v for k, v in params.items() if k not in _META_PARAMS}
 
 
 def _make_exit_params(
@@ -86,16 +104,37 @@ def _suggest_param(
     trial: optuna.Trial,
     name: str,
     schema: dict[str, Any],
+    step_factor: int = 1,
 ) -> int | float | str | bool:
-    """Map a single param schema entry to an Optuna suggest call."""
+    """Map a single param schema entry to an Optuna suggest call.
+
+    Parameters
+    ----------
+    step_factor
+        Multiplier for step sizes (coarse-to-fine search).
+        ``1`` = original resolution; ``4`` = 4x coarser steps.
+    """
     ptype = schema["type"]
     if ptype == "int":
-        return trial.suggest_int(name, schema["min"], schema["max"])
+        lo, hi = schema["min"], schema["max"]
+        if step_factor > 1:
+            step = max(1, (hi - lo) // max(1, (hi - lo) // step_factor))
+            return trial.suggest_int(name, lo, hi, step=step)
+        return trial.suggest_int(name, lo, hi)
     if ptype == "float":
         step = schema.get("step")
+        if step and step_factor > 1:
+            step = step * step_factor
+            # Ensure at least 2 values in range
+            lo, hi = schema["min"], schema["max"]
+            if step > (hi - lo):
+                step = hi - lo
         return trial.suggest_float(name, schema["min"], schema["max"], step=step)
     if ptype == "str":
-        return trial.suggest_categorical(name, schema["choices"])
+        choices = schema.get("choices")
+        if choices:
+            return trial.suggest_categorical(name, choices)
+        return schema.get("default", "")
     if ptype == "bool":
         return trial.suggest_categorical(name, [True, False])
     raise ValueError(f"Unsupported param type {ptype!r} for {name!r}")
@@ -122,6 +161,76 @@ DEFAULT_RISK_SEARCH_SPACE: dict[str, dict[str, Any]] = {
     "pyramid__threshold_factor": {"type": "float", "min": 1.005, "max": 1.03, "step": 0.005},
     # ── Time exit ── (low impact, keep but narrow)
     "time_exit__max_bars": {"type": "int", "min": 50, "max": 400},
+}
+
+# Lean variant: only the 3 most impactful risk params.
+# Reduces search space from ~290M to ~324 combinations.
+# With fewer effective dimensions, Optuna needs fewer trials (100-200),
+# which lowers E[max(SR)] in the DSR test, making it feasible to pass.
+#
+# Full range (DEFAULT_RISK_SEARCH_SPACE) is preserved above for reference.
+# The remaining params (break_even, pyramid details, time_exit) use
+# archetype defaults without optimization.
+LEAN_RISK_SEARCH_SPACE: dict[str, dict[str, Any]] = {
+    "stop__atr_multiple": {"type": "float", "min": 4.0, "max": 20.0, "step": 2.0},
+    "sizing__risk_pct": {"type": "float", "min": 3.0, "max": 25.0, "step": 2.0},
+    "partial_tp__r_multiple": {"type": "float", "min": 0.5, "max": 1.5, "step": 0.5},
+}
+
+# Rich variant: DEFAULT + TP trigger mode + BE activation mode.
+# Adds 2 categorical dimensions to let Optuna explore how TP1 fires
+# (r_multiple vs signal) and when break-even activates (after_tp1 vs
+# r_multiple).  These modes are already supported by the FSM.
+RICH_RISK_SEARCH_SPACE: dict[str, dict[str, Any]] = {
+    **DEFAULT_RISK_SEARCH_SPACE,
+    # Override ranges that collapsed to minimums in v4 exploration:
+    # stop collapsed to 4.0 → expand down; TP collapsed to 0.5 → expand down
+    "stop__atr_multiple": {"type": "float", "min": 2.0, "max": 12.0, "step": 0.5},
+    "partial_tp__r_multiple": {"type": "float", "min": 0.25, "max": 1.5, "step": 0.125},
+    "partial_tp__trigger": {"type": "str", "choices": ["r_multiple", "signal"]},
+    "break_even__activation": {"type": "str", "choices": ["after_tp1", "r_multiple"]},
+}
+
+# V8 refined: narrowed from v7 analysis of 229 finalists + 240K trials.
+#
+# Evidence-based changes:
+#   stop__atr_multiple: 100% of top Q4 at 2.0 → explore [0.8, 3.0]
+#   partial_tp__r_multiple: 100% at 0.25 → explore [0.10, 0.50]
+#   partial_tp__close_pct: 98% at 10 → explore [5, 20]
+#   break_even__buffer: collapsed to max 1.007 → explore [1.005, 1.015]
+#   pyramid__max_adds: Q4 prefers 1, Q1 prefers 4 → fix at [1, 2]
+#   pyramid__block_bars: Q4 slightly higher → [20, 40]
+#   sizing__risk_pct: no discrimination → keep but narrow [2, 10]
+#   partial_tp__trigger: 99.7% r_multiple → fix as r_multiple (remove)
+#   break_even__activation: 73% after_tp1 → keep both
+#
+# Total reduction: ~95% fewer risk combinations vs RICH_RISK_SEARCH_SPACE
+V8_RISK_SEARCH_SPACE: dict[str, dict[str, Any]] = {
+    "stop__atr_multiple": {"type": "float", "min": 0.8, "max": 3.0, "step": 0.2},
+    "sizing__risk_pct": {"type": "float", "min": 2.0, "max": 10.0, "step": 2.0},
+    "partial_tp__r_multiple": {"type": "float", "min": 0.10, "max": 0.50, "step": 0.05},
+    "partial_tp__close_pct": {"type": "float", "min": 5.0, "max": 20.0, "step": 5.0},
+    "break_even__buffer": {"type": "float", "min": 1.005, "max": 1.015, "step": 0.002},
+    "break_even__activation": {"type": "str", "choices": ["after_tp1", "r_multiple"]},
+    "pyramid__max_adds": {"type": "int", "min": 1, "max": 2},
+    "pyramid__block_bars": {"type": "int", "min": 20, "max": 40},
+}
+
+# V9 exhaustive: focused on the 3 most critical risk dimensions.
+# No pyramiding, no time exit, no sizing optimization.
+# Break-even hardcoded to after_tp1 (best from v7/v8 analysis).
+#
+# Philosophy: position management >> entry signals.
+# These 3 params define how a trade is managed once open:
+#   1. Stop distance (ATR multiple) — how much room to give
+#   2. TP distance (R-multiple of stop) — when to take partial profit
+#   3. Close % — how much to close at TP1 (rest runs with trailing)
+#
+# Total: 8 × 10 × 6 = 480 risk combinations (exhaustively coverable)
+EXHAUSTIVE_RISK_SPACE: dict[str, dict[str, Any]] = {
+    "stop__atr_multiple": {"type": "float", "min": 0.5, "max": 4.0, "step": 0.5},
+    "partial_tp__r_multiple": {"type": "float", "min": 0.25, "max": 2.5, "step": 0.25},
+    "partial_tp__close_pct": {"type": "float", "min": 10.0, "max": 60.0, "step": 10.0},
 }
 
 
@@ -160,17 +269,38 @@ def filter_search_space(
 def _suggest_risk_overrides(
     trial: optuna.Trial,
     risk_search_space: dict[str, dict[str, Any]],
+    step_factor: int = 1,
 ) -> dict[str, Any]:
     """Suggest risk overrides and convert flat keys to nested dict."""
     overrides: dict[str, Any] = {}
     for flat_key, schema in risk_search_space.items():
-        value = _suggest_param(trial, flat_key, schema)
+        value = _suggest_param(trial, flat_key, schema, step_factor=step_factor)
         parts = flat_key.split("__")
         target = overrides
         for part in parts[:-1]:
             target = target.setdefault(part, {})
         target[parts[-1]] = value
     return overrides
+
+
+# ── Smart num_optional_required ──────────────────────────────────────
+
+def _smart_optional_range(excl_count: int, opc_count: int) -> tuple[int, int]:
+    """Compute sensible (min, max) for num_optional_required.
+
+    Balances total filtering power: excl + optional_required ≈ 3-4.
+    More excluyentes → fewer opcionales required.
+    """
+    if opc_count == 0:
+        return (0, 0)
+    if excl_count >= 2:
+        # 2 hard filters already — need only 1-2 optional for confluence
+        return (1, min(2, opc_count))
+    if excl_count == 1:
+        # 1 hard filter — need 1-3 optional
+        return (1, min(3, opc_count))
+    # excl_count == 0: no hard filter, need more optionals
+    return (min(2, opc_count), min(4, opc_count))
 
 
 # ── Objective ─────────────────────────────────────────────────────────
@@ -209,11 +339,19 @@ class BacktestObjective:
         risk_search_space: dict[str, dict[str, Any]] | None = None,
         mode: str = "auto",
         commission_pct: float | None = None,
+        multi_objective: bool = False,
+        step_factor: int = 1,
     ) -> None:
         self._dataset = dataset
         self._indicator_names = indicator_names or list(INDICATOR_REGISTRY.keys())
         self._auxiliary_indicators = auxiliary_indicators or []
         self._archetype = archetype
+        self._multi_objective = multi_objective
+        self._step_factor = step_factor
+        self._entry_indicator_names = set(get_entry_indicators(archetype))
+        # Dynamic states: only for rich archetypes with 5+ entry indicators.
+        # Enables per-indicator state/TF suggestion via Optuna.
+        self._dynamic_states = len(self._entry_indicator_names) >= 5
         self._direction = direction
         self._metric = metric
         self._mode = mode
@@ -223,16 +361,24 @@ class BacktestObjective:
 
         # Build effective risk search space: drop dead parameters based
         # on archetype config (stop model, TP1 enabled, etc.)
-        base_space = risk_search_space or dict(DEFAULT_RISK_SEARCH_SPACE)
+        # Rich archetypes get expanded space with TP trigger + BE activation modes.
+        if risk_search_space is not None:
+            base_space = risk_search_space
+        elif self._dynamic_states:
+            base_space = dict(RICH_RISK_SEARCH_SPACE)
+        else:
+            base_space = dict(DEFAULT_RISK_SEARCH_SPACE)
         archetype_cfg = get_archetype(archetype).build_config()
         if archetype_cfg.stop.model == "firestorm_tm":
             base_space.pop("stop__atr_multiple", None)
         if not archetype_cfg.partial_tp.enabled:
             base_space.pop("partial_tp__r_multiple", None)
             base_space.pop("partial_tp__close_pct", None)
+            base_space.pop("partial_tp__trigger", None)
         if not archetype_cfg.break_even.enabled:
             base_space.pop("break_even__buffer", None)
             base_space.pop("break_even__r_multiple", None)
+            base_space.pop("break_even__activation", None)
         if not archetype_cfg.pyramid.enabled:
             base_space.pop("pyramid__max_adds", None)
             base_space.pop("pyramid__block_bars", None)
@@ -241,16 +387,48 @@ class BacktestObjective:
             base_space.pop("time_exit__max_bars", None)
         self._risk_search_space = base_space
 
+        # Detect exhaustive mode: no pyramid keys → force pyramid disabled
+        has_pyramid_keys = any(k.startswith("pyramid__") for k in base_space)
+        self._force_no_pyramid = not has_pyramid_keys
+
     # Minimum trades required; configs below this get a harsh penalty
     # so Optuna learns to avoid degenerate low-trade solutions.
     # 300 ensures statistical significance across any TF/period.
     MIN_TRADES: int = 300
     LOW_TRADE_PENALTY: float = -10.0
 
+    # Pine Script pattern: max 2 hard requirements (EXCLUYENTE),
+    # rest as OPCIONAL with smart num_optional_required.
+    MAX_EXCLUYENTE: int = 2
+
     def __call__(self, trial: optuna.Trial) -> float:
         """Suggest params, run backtest, return metric value."""
         indicator_params = self._suggest_indicator_params(trial)
-        risk_overrides = _suggest_risk_overrides(trial, self._risk_search_space)
+        # Risk params use their defined steps directly — step_factor is
+        # regularization for indicator params only (prevents overfit of
+        # continuous indicator periods/thresholds).
+        risk_overrides = _suggest_risk_overrides(
+            trial, self._risk_search_space, step_factor=1,
+        )
+
+        # Dynamic archetypes: enforce max EXCLUYENTE, then suggest num_optional_required.
+        if self._dynamic_states:
+            self._enforce_max_excluyente(indicator_params)
+
+            excl_count = sum(
+                1 for p in indicator_params.values()
+                if isinstance(p, dict) and p.get("__state") == "Excluyente"
+            )
+            opcional_count = sum(
+                1 for p in indicator_params.values()
+                if isinstance(p, dict) and p.get("__state") == "Opcional"
+            )
+            min_opt, max_opt = _smart_optional_range(excl_count, opcional_count)
+            if max_opt > 0:
+                num_opt = trial.suggest_int("num_optional_required", min_opt, max_opt)
+            else:
+                num_opt = 1
+            indicator_params["__num_optional_required"] = num_opt
 
         signals = self.build_signals(indicator_params)
         risk_config = self.build_risk_config(risk_overrides)
@@ -277,16 +455,17 @@ class BacktestObjective:
         trial.set_user_attr("risk_overrides", risk_overrides)
 
         total_trades = int(metrics.get("total_trades", 0))
-        if total_trades < self.MIN_TRADES:
-            return self.LOW_TRADE_PENALTY
-
         value = float(metrics.get(self._metric, 0.0))
         if np.isnan(value) or np.isinf(value):
-            logger.warning(
-                "Metric '{}' returned {} for trial — applying low-trade penalty",
-                self._metric, value,
-            )
-            value = self.LOW_TRADE_PENALTY
+            value = 0.0
+
+        # Multi-objective: return (metric, trades) — NSGA-II optimizes both
+        if self._multi_objective:
+            return value, float(total_trades)
+
+        # Single-objective: penalize low trade count
+        if total_trades < self.MIN_TRADES:
+            return self.LOW_TRADE_PENALTY
         return value
 
     def build_signals(self, indicator_params: dict[str, dict[str, Any]]) -> StrategySignals:
@@ -303,6 +482,7 @@ class BacktestObjective:
         auxiliary = set(self._auxiliary_indicators)
         ohlcv = self._dataset.ohlcv
         idx = ohlcv.index
+        base_tf = self._dataset.base_timeframe
         mode, threshold = get_combination_mode(self._archetype)
 
         # ── Entry signals ────────────────────────────────────────────
@@ -310,19 +490,60 @@ class BacktestObjective:
         entry_short_signals: dict[str, pd.Series] = {}
         entry_states: dict[str, IndicatorState] = {}
 
+        # Extract num_optional_required for dynamic archetypes
+        # Use .get() not .pop() — caller's dict must not be mutated (WFO reuses it across folds)
+        num_optional_required = indicator_params.get("__num_optional_required", 1)
+
         for ind_name, params in indicator_params.items():
-            if ind_name in auxiliary:
+            if ind_name.startswith("__") or ind_name in auxiliary:
                 continue
-            indicator = get_indicator(ind_name)
 
-            entry_sig = indicator.compute(ohlcv, **params)
-            entry_signals[ind_name] = entry_sig
-            entry_states[ind_name] = IndicatorState.EXCLUYENTE
+            # Extract meta-params (not passed to compute)
+            params = dict(params)  # copy to avoid mutating
+            state_str = params.pop("__state", None)
+            tf_selection = params.pop("__timeframe", None)
 
-            # Inverted entry → entry_short
-            inv_params = _make_exit_params(ind_name, params)
-            if inv_params is not None:
-                entry_short_signals[ind_name] = indicator.compute(ohlcv, **inv_params)
+            # Dynamic states: skip DESACTIVADO indicators
+            if state_str == "Desactivado":
+                continue
+
+            # Resolve dynamic state
+            if state_str is not None:
+                entry_states[ind_name] = IndicatorState(state_str)
+            else:
+                entry_states[ind_name] = IndicatorState.EXCLUYENTE
+
+            # Per-indicator TF resampling
+            if tf_selection and tf_selection != "grafico":
+                pine_tf = self._dataset.base_timeframe
+                try:
+                    from suitetrading.data.timeframes import tf_to_pine
+                    pine_tf = tf_to_pine(base_tf)
+                except (ImportError, ValueError):
+                    pass
+                target_tf = resolve_timeframe(pine_tf, tf_selection.replace("_", " "))
+                try:
+                    htf_ohlcv = resample_ohlcv(ohlcv, target_tf, base_tf=base_tf)
+                    indicator = get_indicator(ind_name)
+                    entry_sig = indicator.compute(htf_ohlcv, **params)
+                    entry_signals[ind_name] = align_to_base(entry_sig, idx).fillna(False)
+                    inv_params = _make_exit_params(ind_name, params)
+                    if inv_params is not None:
+                        inv_sig = indicator.compute(htf_ohlcv, **inv_params)
+                        entry_short_signals[ind_name] = align_to_base(inv_sig, idx).fillna(False)
+                except Exception:
+                    logger.debug("HTF resampling failed for {}, falling back to base TF", ind_name)
+                    indicator = get_indicator(ind_name)
+                    entry_signals[ind_name] = indicator.compute(ohlcv, **params)
+                    inv_params = _make_exit_params(ind_name, params)
+                    if inv_params is not None:
+                        entry_short_signals[ind_name] = indicator.compute(ohlcv, **inv_params)
+            else:
+                indicator = get_indicator(ind_name)
+                entry_signals[ind_name] = indicator.compute(ohlcv, **params)
+                inv_params = _make_exit_params(ind_name, params)
+                if inv_params is not None:
+                    entry_short_signals[ind_name] = indicator.compute(ohlcv, **inv_params)
 
         if not entry_signals:
             entry_long = pd.Series(False, index=idx)
@@ -330,11 +551,13 @@ class BacktestObjective:
         else:
             entry_long = combine_signals(
                 entry_signals, entry_states,
+                num_optional_required=num_optional_required,
                 combination_mode=mode, majority_threshold=threshold,
             )
             if entry_short_signals:
                 entry_short = combine_signals(
                     entry_short_signals, entry_states,
+                    num_optional_required=num_optional_required,
                     combination_mode=mode, majority_threshold=threshold,
                 )
             else:
@@ -347,7 +570,7 @@ class BacktestObjective:
         exit_states: dict[str, IndicatorState] = {}
 
         for ind_name in exit_indicator_names:
-            params = indicator_params.get(ind_name, {})
+            params = _strip_meta(indicator_params.get(ind_name, {}))
             indicator = get_indicator(ind_name)
             # Exit long = bearish signal (inverted direction)
             inv_params = _make_exit_params(ind_name, params)
@@ -375,7 +598,7 @@ class BacktestObjective:
         trail_states: dict[str, IndicatorState] = {}
 
         for ind_name in trailing_indicator_names:
-            params = indicator_params.get(ind_name, {})
+            params = _strip_meta(indicator_params.get(ind_name, {}))
             indicator = get_indicator(ind_name)
             # Trailing long: bearish cross (direction="long" for SSLChannelLow)
             trail_long_sigs[ind_name] = indicator.compute(ohlcv, direction="long", **params)
@@ -414,7 +637,6 @@ class BacktestObjective:
         # ── HTF filter (higher-timeframe trend confirmation) ────
         htf_ind_name, htf_tf = get_htf_filter(self._archetype)
         if htf_ind_name and htf_tf and hasattr(self._dataset, 'ohlcv'):
-            from suitetrading.indicators.mtf import resample_ohlcv, align_to_base
             try:
                 htf_ohlcv = resample_ohlcv(ohlcv, htf_tf, base_tf=self._dataset.base_timeframe)
                 htf_indicator = get_indicator(htf_ind_name)
@@ -444,7 +666,27 @@ class BacktestObjective:
         """Build a RiskConfig from archetype + overrides."""
         if self._commission_pct is not None:
             risk_overrides = {**risk_overrides, "commission_pct": self._commission_pct}
+        if self._force_no_pyramid:
+            risk_overrides.setdefault("pyramid", {})
+            risk_overrides["pyramid"]["enabled"] = False
+            risk_overrides["pyramid"]["max_adds"] = 0
         return get_archetype(self._archetype).build_config(**risk_overrides)
+
+    def _enforce_max_excluyente(self, indicator_params: dict[str, dict[str, Any]]) -> None:
+        """Cap EXCLUYENTE count at MAX_EXCLUYENTE, downgrade excess to OPCIONAL.
+
+        Replicates the Pine Script pattern: 2-3 hard requirements max,
+        rest as flexible optionals.  Modifies params in-place.
+        """
+        excl_names = [
+            name for name, p in indicator_params.items()
+            if isinstance(p, dict) and p.get("__state") == "Excluyente"
+        ]
+        if len(excl_names) <= self.MAX_EXCLUYENTE:
+            return
+        # Downgrade excess to OPCIONAL (keep first N by iteration order)
+        for name in excl_names[self.MAX_EXCLUYENTE:]:
+            indicator_params[name]["__state"] = "Opcional"
 
     def run_single(self, params: dict[str, Any]) -> dict[str, Any]:
         """Run a backtest with explicit params (no Optuna trial needed).
@@ -492,17 +734,28 @@ class BacktestObjective:
         Indicator params have keys like ``"ssl_channel__length"`` where
         the prefix matches a known indicator name.  Everything else goes
         to risk overrides.
+
+        Meta-params (``__state``, ``__timeframe``) use double-underscore
+        after the indicator name (e.g. ``"rsi____state"``).  The global
+        ``num_optional_required`` is injected as a special key.
         """
         indicator_params: dict[str, dict[str, Any]] = {}
         risk_overrides: dict[str, Any] = {}
         indicator_set = set(self._indicator_names)
 
+        num_optional_required = flat_params.get("num_optional_required", 1)
+
         for key, value in flat_params.items():
+            if key == "num_optional_required":
+                continue
             parts = key.split("__", 1)
             if len(parts) == 2 and parts[0] in indicator_set:
                 indicator_params.setdefault(parts[0], {})[parts[1]] = value
             else:
                 risk_overrides[key] = value
+
+        if self._dynamic_states:
+            indicator_params["__num_optional_required"] = num_optional_required
 
         return indicator_params, risk_overrides
 
@@ -510,14 +763,36 @@ class BacktestObjective:
         self,
         trial: optuna.Trial,
     ) -> dict[str, dict[str, Any]]:
-        """Suggest parameters for each active indicator."""
+        """Suggest parameters for each active indicator.
+
+        When ``_dynamic_states`` is active, also suggests ``__state``
+        (Excluyente/Opcional/Desactivado) and ``__timeframe``
+        (grafico/1_superior/2_superiores) for each entry indicator.
+        These meta-params are stored alongside regular params but
+        consumed by ``build_signals`` — not passed to ``compute()``.
+        """
         result: dict[str, dict[str, Any]] = {}
         for ind_name in self._indicator_names:
             indicator = get_indicator(ind_name)
             schema = indicator.params_schema()
             params: dict[str, Any] = {}
+
+            # Dynamic state/TF for entry indicators in rich archetypes
+            is_entry = ind_name in self._entry_indicator_names
+            if self._dynamic_states and is_entry:
+                params["__state"] = trial.suggest_categorical(
+                    f"{ind_name}____state",
+                    ["Excluyente", "Opcional", "Desactivado"],
+                )
+                params["__timeframe"] = trial.suggest_categorical(
+                    f"{ind_name}____timeframe",
+                    ["grafico", "1_superior", "2_superiores"],
+                )
+
             for param_name, param_schema in schema.items():
                 full_name = f"{ind_name}__{param_name}"
-                params[param_name] = _suggest_param(trial, full_name, param_schema)
+                params[param_name] = _suggest_param(
+                    trial, full_name, param_schema, step_factor=self._step_factor,
+                )
             result[ind_name] = params
         return result

@@ -256,6 +256,59 @@ ARCHETYPE_REGISTRY: dict[str, type[RiskArchetype]] = {
     "ichimoku_ssl_fullrisk_pyr": IchimokuSslFullriskPyr,
 }
 
+# ── Phase 5: auto-register new archetypes using fullrisk_pyr config ──
+# These archetypes use the same risk template (pyramid enabled, ATR stop,
+# signal trailing) and differ only in their indicator combinations,
+# which are defined in config/archetypes.py ARCHETYPE_INDICATORS.
+
+def _register_phase5_archetypes() -> None:
+    """Auto-register Phase 5 archetypes that lack explicit risk classes."""
+    from suitetrading.config.archetypes import ARCHETYPE_INDICATORS
+    from suitetrading.risk.archetypes._fullrisk_base import fullrisk_config as _fc
+
+    phase5_names = [
+        k for k in ARCHETYPE_INDICATORS
+        if k not in ARCHETYPE_REGISTRY and k.endswith("_fullrisk_pyr")
+    ]
+    for name in phase5_names:
+        cls = type(
+            f"_Auto_{name}",
+            (RiskArchetype,),
+            {
+                "name": name,
+                "build_config": lambda self, _n=name, **ov: _fc(
+                    _n, pyramid_enabled=True, overrides=dict(ov),
+                ),
+            },
+        )
+        ARCHETYPE_REGISTRY[name] = cls
+
+_register_phase5_archetypes()
+
+
+# ── Rich archetypes: full risk chain + pyramid ───────────────────────
+# Registered explicitly because they don't follow _fullrisk_pyr suffix.
+
+def _register_rich_archetypes() -> None:
+    from suitetrading.config.archetypes import ARCHETYPE_INDICATORS
+    from suitetrading.risk.archetypes._fullrisk_base import fullrisk_config as _fc
+
+    rich_names = [k for k in ARCHETYPE_INDICATORS if k.startswith("rich_") and k not in ARCHETYPE_REGISTRY]
+    for name in rich_names:
+        cls = type(
+            f"_Auto_{name}",
+            (RiskArchetype,),
+            {
+                "name": name,
+                "build_config": lambda self, _n=name, **ov: _fc(
+                    _n, pyramid_enabled=True, overrides=dict(ov),
+                ),
+            },
+        )
+        ARCHETYPE_REGISTRY[name] = cls
+
+_register_rich_archetypes()
+
 
 def get_archetype(name: str) -> RiskArchetype:
     """Return an archetype instance by name."""

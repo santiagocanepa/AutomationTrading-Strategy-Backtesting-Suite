@@ -10,6 +10,7 @@ Core (always available):
 - ``deflated_sharpe_ratio`` — Deflated Sharpe Ratio test.
 - ``AntiOverfitPipeline`` — Sequential CSCV → DSR → SPA filter.
 - ``ParallelExecutor`` — Multiprocessing backtest execution.
+- ``RollingPortfolioEvaluator`` — Rolling portfolio validation across windows.
 
 Conditional (require optional dependencies):
 
@@ -40,7 +41,16 @@ from suitetrading.optimization.anti_overfit import (
     CSCVValidator,
     deflated_sharpe_ratio,
 )
+from suitetrading.optimization.null_hypothesis import (
+    NullHypothesisResult,
+    NullHypothesisTest,
+    permute_ohlcv,
+)
 from suitetrading.optimization.optuna_optimizer import OptunaOptimizer
+from suitetrading.optimization.rolling_validation import (
+    RollingPortfolioEvaluator,
+    RollingValidationResult,
+)
 from suitetrading.optimization.parallel import ParallelExecutor
 from suitetrading.optimization.walk_forward import WalkForwardEngine
 
@@ -65,9 +75,16 @@ __all__ = [
     "deflated_sharpe_ratio",
     "AntiOverfitPipeline",
     "ParallelExecutor",
+    # Null hypothesis
+    "NullHypothesisTest",
+    "NullHypothesisResult",
+    "permute_ohlcv",
     # Conditional
     "DEAPOptimizer",
     "FeatureImportanceEngine",
+    # Rolling validation
+    "RollingPortfolioEvaluator",
+    "RollingValidationResult",
     # Schemas
     "ObjectiveResult",
     "OptimizationResult",

@@ -85,6 +85,7 @@ class BacktestEngine:
                 dataset=dataset,
                 signals=signals,
                 risk_config=risk_config,
+                direction=direction,
             )
         else:
             result = run_fsm_backtest(

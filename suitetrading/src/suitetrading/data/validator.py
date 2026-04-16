@@ -13,8 +13,6 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from loguru import logger
-
 from suitetrading.data.timeframes import tf_to_pandas_offset, tf_to_seconds
 
 

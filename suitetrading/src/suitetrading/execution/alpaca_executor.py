@@ -19,7 +19,7 @@ from loguru import logger
 
 try:
     from alpaca.trading.client import TradingClient
-    from alpaca.trading.enums import OrderSide, OrderType, TimeInForce
+    from alpaca.trading.enums import OrderSide, TimeInForce
     from alpaca.trading.requests import (
         GetAssetsRequest,
         LimitOrderRequest,

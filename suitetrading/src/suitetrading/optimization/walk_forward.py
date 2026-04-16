@@ -332,6 +332,15 @@ class WalkForwardEngine:
                     fold_ratios.append(is_val / oos_val)
             degradation[pid] = float(np.mean(fold_ratios)) if fold_ratios else float("inf")
 
+        # Per-fold OOS metrics (strip _equity_curve to keep serializable)
+        fold_metrics: dict[str, list[dict[str, float]]] = {}
+        for params in candidate_params:
+            pid = self._param_id(params)
+            fold_metrics[pid] = [
+                {k: v for k, v in fm.items() if k != "_equity_curve"}
+                for fm in oos_metrics_all.get(pid, [])
+            ]
+
         return WFOResult(
             config=self._config,
             n_candidates=len(candidate_params),
@@ -339,6 +348,7 @@ class WalkForwardEngine:
             oos_equity_curves=agg_oos_equity,
             oos_metrics=agg_oos_metrics,
             degradation=degradation,
+            fold_metrics=fold_metrics,
         )
 
     # ── Helpers ───────────────────────────────────────────────────────
@@ -389,127 +399,32 @@ class WalkForwardEngine:
         self, dataset: BacktestDataset, indicator_params: dict[str, Any],
         archetype: str = "trend_following",
     ) -> StrategySignals:
-        """Build signals using indicator registry (same logic as objective)."""
-        from suitetrading.backtesting._internal.schemas import StrategySignals
-        from suitetrading.config.archetypes import (
-            get_combination_mode,
-            get_exit_indicators,
-            get_trailing_indicators,
+        """Build signals using BacktestObjective.build_signals.
+
+        Delegates to BacktestObjective to handle both legacy archetypes
+        and rich archetypes with dynamic states/TFs/num_optional_required.
+        """
+        from suitetrading.optimization._internal.objective import BacktestObjective
+        from suitetrading.config.archetypes import get_all_indicators
+
+        all_ind = list(indicator_params.keys())
+        # Add auxiliary indicators that may not be in indicator_params
+        for aux in self._auxiliary_indicators:
+            if aux not in all_ind:
+                all_ind.append(aux)
+        # Filter out meta-keys (e.g. __num_optional_required)
+        ind_names = [n for n in all_ind if not n.startswith("__")]
+
+        objective = BacktestObjective(
+            dataset=dataset,
+            indicator_names=ind_names,
+            auxiliary_indicators=list(self._auxiliary_indicators),
+            archetype=archetype,
+            metric=self._metric,
+            mode="simple",
+            commission_pct=self._commission_pct,
         )
-        from suitetrading.indicators.base import IndicatorState
-        from suitetrading.indicators.registry import get_indicator
-        from suitetrading.indicators.signal_combiner import combine_signals
-        from suitetrading.optimization._internal.objective import _make_exit_params
-
-        ohlcv = dataset.ohlcv
-        idx = ohlcv.index
-        mode, threshold = get_combination_mode(archetype)
-
-        # ── Entry signals ────────────────────────────────────────────
-        entry_signals: dict[str, pd.Series] = {}
-        entry_short_signals: dict[str, pd.Series] = {}
-        entry_states: dict[str, IndicatorState] = {}
-
-        for ind_name, params in indicator_params.items():
-            if ind_name in self._auxiliary_indicators:
-                continue
-            indicator = get_indicator(ind_name)
-            entry_signals[ind_name] = indicator.compute(ohlcv, **params)
-            entry_states[ind_name] = IndicatorState.EXCLUYENTE
-            inv_params = _make_exit_params(ind_name, params)
-            if inv_params is not None:
-                entry_short_signals[ind_name] = indicator.compute(ohlcv, **inv_params)
-
-        if not entry_signals:
-            entry_long = pd.Series(False, index=idx)
-            entry_short = pd.Series(False, index=idx)
-        else:
-            entry_long = combine_signals(
-                entry_signals, entry_states,
-                combination_mode=mode, majority_threshold=threshold,
-            )
-            entry_short = (
-                combine_signals(
-                    entry_short_signals, entry_states,
-                    combination_mode=mode, majority_threshold=threshold,
-                )
-                if entry_short_signals
-                else pd.Series(False, index=idx)
-            )
-
-        # ── Exit signals ─────────────────────────────────────────────
-        exit_ind_names = get_exit_indicators(archetype)
-        exit_long_sigs: dict[str, pd.Series] = {}
-        exit_short_sigs: dict[str, pd.Series] = {}
-        exit_states: dict[str, IndicatorState] = {}
-
-        for ind_name in exit_ind_names:
-            params = indicator_params.get(ind_name, {})
-            indicator = get_indicator(ind_name)
-            inv_params = _make_exit_params(ind_name, params)
-            if inv_params is not None:
-                exit_long_sigs[ind_name] = indicator.compute(ohlcv, **inv_params)
-                exit_states[ind_name] = IndicatorState.EXCLUYENTE
-            exit_short_sigs[ind_name] = indicator.compute(ohlcv, **params)
-
-        exit_long = (
-            combine_signals(exit_long_sigs, exit_states, combination_mode=mode, majority_threshold=threshold)
-            if exit_long_sigs
-            else pd.Series(False, index=idx)
-        )
-        exit_short = (
-            combine_signals(exit_short_sigs, exit_states, combination_mode=mode, majority_threshold=threshold)
-            if exit_short_sigs
-            else pd.Series(False, index=idx)
-        )
-
-        # ── Trailing signals ─────────────────────────────────────────
-        trail_ind_names = get_trailing_indicators(archetype)
-        trail_long_sigs: dict[str, pd.Series] = {}
-        trail_short_sigs: dict[str, pd.Series] = {}
-        trail_states: dict[str, IndicatorState] = {}
-
-        for ind_name in trail_ind_names:
-            params = indicator_params.get(ind_name, {})
-            indicator = get_indicator(ind_name)
-            trail_long_sigs[ind_name] = indicator.compute(ohlcv, direction="long", **params)
-            trail_states[ind_name] = IndicatorState.EXCLUYENTE
-            trail_short_sigs[ind_name] = indicator.compute(ohlcv, direction="short", **params)
-
-        trailing_long = (
-            combine_signals(trail_long_sigs, trail_states, combination_mode=mode, majority_threshold=threshold)
-            if trail_long_sigs
-            else exit_long
-        )
-        trailing_short = (
-            combine_signals(trail_short_sigs, trail_states, combination_mode=mode, majority_threshold=threshold)
-            if trail_short_sigs
-            else exit_short
-        )
-
-        # ── Auxiliary payload ────────────────────────────────────────
-        indicators_payload: dict[str, pd.Series] = {}
-        for ind_name in self._auxiliary_indicators:
-            if ind_name in indicator_params and ind_name == "firestorm_tm":
-                from suitetrading.indicators.custom.firestorm import firestorm as _firestorm_fn
-                params = indicator_params[ind_name]
-                ftm_result = _firestorm_fn(
-                    ohlcv["open"], ohlcv["high"], ohlcv["low"], ohlcv["close"],
-                    period=params.get("period", 9),
-                    multiplier=params.get("multiplier", 1.8),
-                )
-                indicators_payload["firestorm_tm_up"] = ftm_result["up"]
-                indicators_payload["firestorm_tm_dn"] = ftm_result["dn"]
-
-        return StrategySignals(
-            entry_long=entry_long,
-            entry_short=entry_short,
-            exit_long=exit_long,
-            exit_short=exit_short,
-            trailing_long=trailing_long,
-            trailing_short=trailing_short,
-            indicators_payload=indicators_payload,
-        )
+        return objective.build_signals(indicator_params)
 
     @staticmethod
     def _resolve_initial_capital(

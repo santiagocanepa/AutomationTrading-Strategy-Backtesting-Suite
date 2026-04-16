@@ -76,6 +76,8 @@ class WFOResult:
     oos_equity_curves: dict[str, np.ndarray]
     oos_metrics: dict[str, dict[str, float]]
     degradation: dict[str, float]
+    # Per-fold OOS metrics for each candidate (candidate_id → [fold0_metrics, ...])
+    fold_metrics: dict[str, list[dict[str, float]]] = field(default_factory=dict)
 
 
 # ── Anti-overfitting ──────────────────────────────────────────────────

@@ -730,7 +730,228 @@ ARCHETYPE_INDICATORS: dict[str, ArchetypeIndicators] = {
         "exit": ["ichimoku"], "trailing": ["ssl_channel"],
         "combination_mode": "excluyente",
     },
+
+    # ── Phase 5: regime-filtered & multi-feature archetypes ──────────
+    #
+    # These use 2-4 indicators per strategy, combining entry signals
+    # with regime filters and volume confirmation.  The higher feature
+    # count creates stronger signal discrimination (fewer but more
+    # confident entries).
+
+    # Trend + regime filter (only trade when volatility is elevated)
+    "roc_regime_fullrisk_pyr": {
+        "entry": ["roc", "volatility_regime"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ema_regime_fullrisk_pyr": {
+        "entry": ["ema", "volatility_regime"], "auxiliary": ["ssl_channel"],
+        "exit": ["ema"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "macd_regime_fullrisk_pyr": {
+        "entry": ["macd", "volatility_regime"], "auxiliary": ["ssl_channel"],
+        "exit": ["macd"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "donchian_regime_fullrisk_pyr": {
+        "entry": ["donchian", "volatility_regime"], "auxiliary": ["ssl_channel"],
+        "exit": ["donchian"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+
+    # Momentum + volume confirmation (entry on both momentum + volume spike)
+    "roc_volspike_fullrisk_pyr": {
+        "entry": ["roc", "volume_spike"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "donchian_volspike_fullrisk_pyr": {
+        "entry": ["donchian", "volume_spike"], "auxiliary": ["ssl_channel"],
+        "exit": ["donchian"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ema_volspike_fullrisk_pyr": {
+        "entry": ["ema", "volume_spike"], "auxiliary": ["ssl_channel"],
+        "exit": ["ema"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+
+    # Divergence-based (mean reversion entries)
+    "divergence_fullrisk_pyr": {
+        "entry": ["momentum_divergence"], "auxiliary": ["ssl_channel"],
+        "exit": ["momentum_divergence"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "divergence_adx_fullrisk_pyr": {
+        "entry": ["momentum_divergence", "adx_filter"], "auxiliary": ["ssl_channel"],
+        "exit": ["momentum_divergence"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+
+    # Triple-stacked (3 entry features — maximum discrimination)
+    "roc_adx_regime_fullrisk_pyr": {
+        "entry": ["roc", "adx_filter", "volatility_regime"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_volspike_regime_fullrisk_pyr": {
+        "entry": ["roc", "volume_spike", "volatility_regime"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "ema_adx_regime_fullrisk_pyr": {
+        "entry": ["ema", "adx_filter", "volatility_regime"], "auxiliary": ["ssl_channel"],
+        "exit": ["ema"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+
+    # Crypto-specific (need futures data; fall back to no-signal if absent)
+    "funding_reversal_fullrisk_pyr": {
+        "entry": ["funding_rate"], "auxiliary": ["ssl_channel"],
+        "exit": ["funding_rate"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_oi_fullrisk_pyr": {
+        "entry": ["roc", "oi_divergence"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_funding_fullrisk_pyr": {
+        "entry": ["roc", "funding_rate"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_lsratio_fullrisk_pyr": {
+        "entry": ["roc", "long_short_ratio"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+
+    # Multi-alpha: momentum + futures + regime (maximum feature stacking)
+    "roc_funding_regime_fullrisk_pyr": {
+        "entry": ["roc", "funding_rate", "volatility_regime"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+    "roc_oi_regime_fullrisk_pyr": {
+        "entry": ["roc", "oi_divergence", "volatility_regime"], "auxiliary": ["ssl_channel"],
+        "exit": ["roc"], "trailing": ["ssl_channel"],
+        "combination_mode": "excluyente",
+    },
+
+    # ══ Rich Archetype: Pine Script-level complexity ═════════════════
+    # Entry indicators with dynamic states (Excluyente/Opcional/Desactivado),
+    # per-indicator TF, and num_optional_required — all suggested by Optuna.
+    # Aligned with Pine Script original: ASH, SSL, Squeeze, MACD, Firestorm,
+    # WaveTrend, MTF MAs, + complementary indicators.
+    "rich_stock": {
+        "entry": [
+            # Pine Script core (active by default in Pine)
+            "ssl_channel",          # impulse (chart TF)
+            "squeeze",              # mean-reversion within trend
+            "firestorm",            # price action + volume
+            "wavetrend_reversal",   # reversal detection
+            "ma_crossover",         # MTF conditions (close vs SMA, per-indicator TF)
+            "macd",                 # momentum confirmation
+            # Complementary
+            "bollinger_bands",      # volatility breakout
+            "adx_filter",          # trend strength filter
+            "rsi",                  # overbought/oversold
+            "obv",                  # volume confirmation
+            "ash",                  # absolute strength histogram
+        ],
+        "auxiliary": ["firestorm_tm"],
+        "exit": ["ssl_channel", "wavetrend_reversal"],
+        "trailing": ["ssl_channel_low"],
+        "combination_mode": "excluyente",
+    },
+
+    # ══ Per-symbol Rich Archetypes (fANOVA-selected, top 7 per symbol) ══
+    # Each symbol gets indicators ranked by fANOVA importance from v4
+    # discovery (10K trials NSGA-II).  Reduces search space ~729x vs
+    # rich_stock (3^7 vs 3^11 state combinations).
+    "rich_spy": {
+        "entry": ["ssl_channel", "wavetrend_reversal", "firestorm", "rsi", "adx_filter", "macd", "bollinger_bands"],
+        "auxiliary": ["firestorm_tm"], "exit": ["ssl_channel", "wavetrend_reversal"],
+        "trailing": ["ssl_channel_low"], "combination_mode": "excluyente",
+    },
+    "rich_qqq": {
+        "entry": ["firestorm", "obv", "ash", "macd", "rsi", "wavetrend_reversal", "adx_filter"],
+        "auxiliary": ["firestorm_tm"], "exit": ["wavetrend_reversal"],
+        "trailing": ["ssl_channel_low"], "combination_mode": "excluyente",
+    },
+    "rich_tsla": {
+        "entry": ["firestorm", "ash", "bollinger_bands", "wavetrend_reversal", "squeeze", "ssl_channel", "rsi"],
+        "auxiliary": ["firestorm_tm"], "exit": ["ssl_channel", "wavetrend_reversal"],
+        "trailing": ["ssl_channel_low"], "combination_mode": "excluyente",
+    },
+    "rich_nvda": {
+        "entry": ["squeeze", "macd", "firestorm", "obv", "ash", "ma_crossover", "wavetrend_reversal"],
+        "auxiliary": ["firestorm_tm"], "exit": ["wavetrend_reversal"],
+        "trailing": ["ssl_channel_low"], "combination_mode": "excluyente",
+    },
+    "rich_aapl": {
+        "entry": ["ash", "firestorm", "ssl_channel", "ma_crossover", "wavetrend_reversal", "macd", "bollinger_bands"],
+        "auxiliary": ["firestorm_tm"], "exit": ["ssl_channel", "wavetrend_reversal"],
+        "trailing": ["ssl_channel_low"], "combination_mode": "excluyente",
+    },
+    "rich_gld": {
+        "entry": ["firestorm", "ma_crossover", "squeeze", "obv", "rsi", "macd", "bollinger_bands"],
+        "auxiliary": ["firestorm_tm"], "exit": ["firestorm"],
+        "trailing": ["ssl_channel_low"], "combination_mode": "excluyente",
+    },
+    "rich_xlk": {
+        "entry": ["rsi", "firestorm", "ssl_channel", "ash", "squeeze", "adx_filter", "bollinger_bands"],
+        "auxiliary": ["firestorm_tm"], "exit": ["ssl_channel"],
+        "trailing": ["ssl_channel_low"], "combination_mode": "excluyente",
+    },
+    "rich_xle": {
+        "entry": ["firestorm", "rsi", "obv", "wavetrend_reversal", "ma_crossover", "ssl_channel", "macd"],
+        "auxiliary": ["firestorm_tm"], "exit": ["ssl_channel", "wavetrend_reversal"],
+        "trailing": ["ssl_channel_low"], "combination_mode": "excluyente",
+    },
+    "rich_tlt": {
+        "entry": ["firestorm", "ma_crossover", "rsi", "ssl_channel", "bollinger_bands", "obv", "macd"],
+        "auxiliary": ["firestorm_tm"], "exit": ["ssl_channel"],
+        "trailing": ["ssl_channel_low"], "combination_mode": "excluyente",
+    },
+    "rich_iwm": {
+        "entry": ["macd", "firestorm", "ssl_channel", "ma_crossover", "bollinger_bands", "ash", "adx_filter"],
+        "auxiliary": ["firestorm_tm"], "exit": ["ssl_channel"],
+        "trailing": ["ssl_channel_low"], "combination_mode": "excluyente",
+    },
 }
+
+
+# ── Tier-1 macro archetypes (auto-generated) ────────────────────────
+# 6 entry indicators × 3 macro filters = 18 combinations.
+# Each uses the base entry + macro filter as entry signals,
+# ssl_channel as auxiliary/trailing, excluyente combination.
+
+_MACRO_ENTRIES = {
+    "roc": {"entry_ind": "roc", "exit_ind": "roc"},
+    "macd": {"entry_ind": "macd", "exit_ind": "macd"},
+    "ema": {"entry_ind": "ema", "exit_ind": "ema"},
+    "donchian": {"entry_ind": "donchian", "exit_ind": "donchian"},
+    "divergence": {"entry_ind": "momentum_divergence", "exit_ind": "momentum_divergence"},
+    "ssl": {"entry_ind": "ssl_channel", "exit_ind": "ssl_channel"},
+}
+
+_MACRO_FILTERS = ["vrp", "yield_curve", "hurst"]
+
+for _entry_key, _entry_cfg in _MACRO_ENTRIES.items():
+    for _macro in _MACRO_FILTERS:
+        _name = f"{_entry_key}_macro_{_macro}_fullrisk_pyr"
+        ARCHETYPE_INDICATORS[_name] = {
+            "entry": [_entry_cfg["entry_ind"], _macro],
+            "auxiliary": ["ssl_channel"],
+            "exit": [_entry_cfg["exit_ind"]],
+            "trailing": ["ssl_channel"],
+            "combination_mode": "excluyente",
+        }
+
+del _MACRO_ENTRIES, _MACRO_FILTERS, _entry_key, _entry_cfg, _macro, _name
 
 
 def get_entry_indicators(archetype: str) -> list[str]:

@@ -30,6 +30,7 @@ from suitetrading.risk.correlation import (
     StrategySelector,
 )
 from suitetrading.risk.portfolio_optimizer import PortfolioOptimizer
+from suitetrading.risk.portfolio_validation import PortfolioValidator
 from suitetrading.backtesting.ensemble import EnsembleBacktester
 
 
@@ -47,6 +48,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--rebalance", default="none",
                    choices=["none", "daily", "weekly", "monthly"])
     p.add_argument("--initial-capital", type=float, default=100_000.0)
+    p.add_argument("--n-trials", type=int, default=2500,
+                   help="Total WFO studies tested (for DSR correction)")
+    p.add_argument("--skip-validation", action="store_true",
+                   help="Skip portfolio validation tests")
     return p.parse_args()
 
 
@@ -154,6 +159,26 @@ def main() -> None:
     dr = DiversificationRatio.compute(returns_matrix, best_weights)
     logger.info("Diversification Ratio: {:.3f}", dr)
 
+    # ── Step 7: Portfolio Validation ──
+    validation_data = None
+    if not args.skip_validation:
+        logger.info("Running portfolio validation suite...")
+        validator = PortfolioValidator()
+        validation_result = validator.run_all(
+            returns_matrix=returns_matrix,
+            weights=best_weights,
+            strategy_ids=selected_ids,
+            n_trials=args.n_trials,
+        )
+        validation_data = {
+            "deflated_sharpe": validation_result.deflated_sharpe,
+            "alpha_decay": validation_result.alpha_decay,
+            "clustering": validation_result.clustering,
+            "regime_conditional": validation_result.regime_conditional,
+            "tail_risk": validation_result.tail_risk,
+            "summary": validation_result.summary,
+        }
+
     # ── Save results ──
     with open(output_dir / "weights.json", "w") as fp:
         json.dump({
@@ -172,6 +197,11 @@ def main() -> None:
     with open(output_dir / "ensemble_metrics.json", "w") as fp:
         json.dump(ensemble_result.metrics, fp, indent=2, default=str)
 
+    # Save validation results
+    if validation_data:
+        with open(output_dir / "validation.json", "w") as fp:
+            json.dump(validation_data, fp, indent=2, default=str)
+
     print("\n" + "=" * 60)
     print("  PORTFOLIO CONSTRUCTION COMPLETE")
     print("=" * 60)
@@ -181,6 +211,18 @@ def main() -> None:
     print(f"  Diversification Ratio: {dr:.3f}")
     print(f"  Ensemble Max DD: {ensemble_result.metrics.get('max_drawdown_pct', 0):.2f}%")
     print(f"  Results: {output_dir}")
+
+    if validation_data:
+        s = validation_data["summary"]
+        print()
+        print("  ── VALIDATION ──")
+        print(f"  DSR: {s['dsr_value']:.4f} {'✓ significant' if s['dsr_significant'] else '✗ NOT significant'}")
+        print(f"  Alpha: {s['alpha_decay_status']}")
+        print(f"  Effective strategies: {s['effective_strategies']:.0f}/{len(selected_ids)} ({s['diversification_pct']:.0f}% real)")
+        print(f"  All regimes positive: {'✓' if s['all_regimes_positive'] else '✗'} (stress ratio: {s['stress_ratio']:.2f})")
+        print(f"  CVaR 99%: {s['cvar_99_pct']:.4f}%, tail ratio: {s['tail_ratio']:.2f}")
+        print(f"  VERDICT: {'PASS' if s['overall_pass'] else 'NEEDS REVIEW'}")
+
     print("=" * 60)
 
 

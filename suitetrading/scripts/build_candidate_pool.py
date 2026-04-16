@@ -73,7 +73,7 @@ def load_ohlcv(exchange: str, symbol: str, timeframe: str,
 def collect_candidates(pbo_threshold: float, max_per_study: int) -> list[dict[str, Any]]:
     """Scan all WFO results and collect candidates below PBO threshold."""
     candidates: list[dict[str, Any]] = []
-    wfo_files = sorted(ROOT.glob("artifacts/discovery/*/results/wfo_*.json"))
+    wfo_files = sorted(ROOT.glob("artifacts/discovery*/results/wfo_*.json"))
 
     for wfo_file in wfo_files:
         with open(wfo_file) as fp:
@@ -251,7 +251,13 @@ def main() -> None:
             cid = c["candidate_id"]
 
             try:
-                all_indicators = list(indicator_params.keys())
+                # Separate meta-params (scalars) from indicator sub-dicts
+                meta_params = {k.lstrip("_"): v for k, v in indicator_params.items()
+                               if not isinstance(v, dict)}
+                ind_params_only = {k: v for k, v in indicator_params.items()
+                                   if isinstance(v, dict)}
+
+                all_indicators = list(ind_params_only.keys())
                 auxiliary = get_auxiliary_indicators(archetype)
 
                 objective = BacktestObjective(
@@ -267,9 +273,10 @@ def main() -> None:
 
                 flat_params = {
                     **{f"{ind}__{p}": v
-                       for ind, params in indicator_params.items()
+                       for ind, params in ind_params_only.items()
                        for p, v in params.items()},
                     **risk_overrides_flat,
+                    **meta_params,
                 }
 
                 # Apply slippage if enabled

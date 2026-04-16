@@ -40,23 +40,47 @@ El enfoque es **random exhaustivo sin Optuna**. NO usar NSGA-II/TPE. NO usar `ru
 
 ---
 
+## Estado actual (2026-04-16)
+
+### v9 (Phase 1 exploration) — PAUSADO
+- Bug MDD fixed en `run_random_v9.py` (ver `bug_history.md`)
+- 1.74M trials con MDD broken en `artifacts/exhaustive_v9/` (irrecuperable)
+- Relanzamiento pendiente decisión del usuario (opciones A/B/C en `v9_current_state.md` de memoria)
+- Smoke test del runner fixed: OK (30 trials, 23 unique MDD values)
+
+### Capa downstream — OPERATIVA
+- `artifacts/portfolio_rich/` (Mar 29): 25 strategies, weights optimizados
+- Input temporal: `discovery_rich_v4/` (31 finalists, PBO 0.014-0.27)
+- Pipeline completo funcional: build_pool → wfo → validate → portfolio → paper
+- Paper trading NO invocado aún (`run_paper_portfolio.py` default path pendiente fix)
+
+### Tests — ✅ 1467/1467 pasando (32s)
+
 ## Qué debe hacer el siguiente agente
 
-### PASO 0: Borrar SQLite obsoletas
+### Opción A — Relanzar v9 desde cero (~57h)
 ```bash
 cd suitetrading
-rm -rf artifacts/exhaustive_v9/studies/
+rm -rf artifacts/exhaustive_v9/
+nohup bash scripts/run_exhaustive_v9.sh </dev/null > artifacts/exhaustive_v9_master.log 2>&1 &
+disown
 ```
-Esto libera 19 GB. Las DBs son del approach anterior (Optuna, MAX_EXCL=3, pyramid habilitado) — no sirven.
 
-### PASO 1: Lanzar v9 completo
+### Opción B — Conservar SPY+QQQ partials, relanzar faltantes (~46h)
+Conservar los Parquets existentes (no tienen MDD pero sí structural data).
+Relanzar solo los studies faltantes con runner fixed.
+
+### Opción C — Solo SPY+QQQ primero (~11h)
+Validar el pipeline fixed antes de comprometer 57h.
 ```bash
-cd suitetrading
-nohup bash scripts/run_exhaustive_v9.sh > artifacts/exhaustive_v9_master.log 2>&1 &
+nohup bash scripts/run_exhaustive_v9_resume.sh </dev/null > artifacts/exhaustive_v9_master.log 2>&1 &
+disown
 ```
-- 300K trials × 20 studies = 6M backtests
-- 4 procesos paralelos, batches automáticos
-- Resume por Parquet (safe to restart)
+
+### Después del relanzamiento — seguir pipeline
+1. Phase 2: análisis post-hoc (pandas sobre Parquet, patrones estructurales)
+2. Phase 3: WFO + PBO validation (`run_discovery.py` con Optuna sobre top ~1000)
+3. Reconstruir portfolio con nuevos finalists
 - Tiempo estimado: ~57 horas
 - Output: `artifacts/exhaustive_v9/parquet/`
 - Disco estimado: ~2.2 GB total

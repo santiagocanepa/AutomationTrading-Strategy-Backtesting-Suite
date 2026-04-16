@@ -154,21 +154,77 @@ $PYTHON scripts/run_discovery.py \
 
 ---
 
+## Capa Downstream (Portfolio Construction)
+
+### Build candidate pool
+```bash
+$PYTHON scripts/build_candidate_pool.py \
+    --pbo-threshold 0.30 --max-per-study 3 \
+    --output-dir artifacts/candidate_pool_rich \
+    --months 36 --apply-slippage
+```
+
+### Portfolio walk-forward validation
+```bash
+$PYTHON scripts/portfolio_walkforward.py \
+    --pool-dir artifacts/candidate_pool_rich \
+    --output-dir artifacts/portfolio_wfo \
+    --is-fraction 0.70
+```
+
+### Validate portfolio (Ensemble PBO + DSR + SPA)
+```bash
+$PYTHON scripts/validate_portfolio.py \
+    --finalists-dir artifacts/candidate_pool_rich \
+    --output-dir artifacts/portfolio_rich_validation
+```
+
+### Construct portfolio (correlation + selection + optimization)
+```bash
+$PYTHON scripts/run_portfolio.py \
+    --finalists artifacts/discovery_rich_v4/results/finalists.csv \
+    --evidence-dir artifacts/candidate_pool_rich \
+    --output-dir artifacts/portfolio_rich \
+    --target-count 100 --max-avg-corr 0.60 \
+    --methods equal shrinkage_kelly \
+    --n-trials 2500
+```
+
+### Paper trading (multi-strategy)
+```bash
+$PYTHON scripts/run_paper_portfolio.py \
+    --portfolio-dir artifacts/portfolio_rich \
+    --exchange alpaca
+```
+
+### Replay with slippage
+```bash
+$PYTHON scripts/replay_with_slippage.py \
+    --evidence-dir artifacts/discovery_rich_v4/evidence \
+    --output-dir artifacts/slippage_analysis
+```
+
+---
+
 ## Artifacts
 
 | Directorio | Run | Estado |
 |-----------|-----|--------|
-| **`artifacts/exhaustive_v9/parquet/`** | **v9 random Parquet** | **🎯 ACTUAL** |
-| `artifacts/discovery_rich_v4/` | v4 NSGA-II (31 finalists) | ✓ Referencia |
-| Otros (v5-v8, exploration_random) | Históricos | Borrados |
+| **`artifacts/exhaustive_v9/parquet/`** | **v9 random Parquet** | **Phase 1 (pausado)** |
+| `artifacts/candidate_pool_rich/` | Pool con slippage | ✅ Downstream vivo |
+| `artifacts/portfolio_rich/` | Portfolio final (25 strat) | ✅ Downstream vivo |
+| `artifacts/portfolio_rich_validation/` | Validation results | ✅ Downstream vivo |
+| `artifacts/discovery_rich_v4/` | v4 NSGA-II (31 finalists) | Input temporal downstream |
+| `artifacts/null_hypothesis*/` | FPR testing | Referencia |
 
 ---
 
 ## Tests
 
 ```bash
-$PYTHON -m pytest tests/ -x -q                                    # Todos
+$PYTHON -m pytest tests/ -x -q                                    # Todos (1467)
 $PYTHON -m pytest tests/optimization/test_rich_archetype.py -v    # Rich archetype
 $PYTHON -m pytest tests/indicators/test_ash.py -v                 # ASH indicator
 $PYTHON -m pytest tests/ -k "test_max_excluyente" -v              # MAX_EXCL=2
+$PYTHON -m pytest tests/risk/test_portfolio_validation.py -v      # Portfolio validation
 ```

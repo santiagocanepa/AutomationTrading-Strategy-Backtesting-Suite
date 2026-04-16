@@ -190,3 +190,58 @@ def _smart_optional_range(excl_count, opc_count):
 | PBO | < 0.20 | Probabilidad de overfitting |
 | MIN_TRADES | ≥ 300 | Significancia estadística |
 | Max drawdown p95 | < 25% | Riesgo acotado |
+
+---
+
+## §8 — Capa Downstream (Portfolio Construction)
+
+Mientras v9 (Phase 1) está pausado, una capa downstream opera sobre finalists existentes (`discovery_rich_v4/`, 31 finalists NSGA-II) para construir un portfolio ejecutable. **Esto NO viola las reglas absolutas** — la capa downstream usa los finalists ya generados, no explora.
+
+### Pipeline downstream
+
+```
+build_candidate_pool.py    Glob discovery*/wfo_*.json → PBO < 0.30 → replay con slippage
+  → artifacts/candidate_pool_rich/
+
+portfolio_walkforward.py   IS 70% / OOS 30% validation
+  → artifacts/portfolio_wfo/
+
+validate_portfolio.py      Ensemble PBO + DSR + SPA + ruin probability
+  → artifacts/portfolio_rich_validation/
+
+run_portfolio.py           Correlation + selection + Kelly/HRP + ensemble
+  → artifacts/portfolio_rich/
+
+run_paper_portfolio.py     Multi-strategy paper trading via Alpaca
+```
+
+### Scope de `run_discovery.py`
+
+`run_discovery.py` es válido para:
+- **Phase 3 (validación WFO)** sobre top ~1000 de Phase 2
+- **Generación de baselines** (e.g., `discovery_rich_v4/`)
+
+`run_discovery.py` **NO es válido para**:
+- Phase 1 (exploración exhaustiva) → usar `run_random_v9.py`
+
+### Cuando v9 produzca finalists
+
+1. Phase 2 identifica top ~1000 structural patterns
+2. Phase 3 valida con `run_discovery.py` (Optuna + WFO + PBO)
+3. Los finalists validados reemplazan `discovery_rich_v4/` como input de la capa downstream
+4. Se reconstruye el portfolio con los nuevos finalists
+
+### Archetype activo
+
+**`rich_stock`** (genérico, 11 entry indicators) fue usado para `discovery_rich_v4/`.
+10 variantes per-symbol (`rich_spy`, `rich_aapl`, etc.) con subsets de indicators
+informados por 764K-trial feature importance están listos para el próximo discovery.
+
+### Artifacts vivos
+
+| Directorio | Contenido | Fecha |
+|------------|-----------|-------|
+| `candidate_pool_rich/` | 40 candidates (PBO filtered + slippage) | Mar 29 |
+| `portfolio_rich/` | 25 strategies, weights.json, selection.json | Mar 29 |
+| `portfolio_rich_validation/` | Ensemble PBO + DSR + SPA results | Mar 29 |
+| `discovery_rich_v4/` | 31 finalists, 22 studies (input temporal) | Mar 25 |

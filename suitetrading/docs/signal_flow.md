@@ -11,19 +11,19 @@
 ┌─────────────────────────────────────────────────────────────────────┐
 │                       INDICATOR LAYER                               │
 │                                                                     │
-│  ┌──────────┐ ┌─────────────┐ ┌──────────┐ ┌──────────────────┐   │
-│  │Firestorm │ │ASH          │ │SSL Chan. │ │MTF Conditions    │   │
-│  │(hold N)  │ │(3×6 combos) │ │(hold N)  │ │(5×SMA crosses)   │   │
-│  └────┬─────┘ └──────┬──────┘ └────┬─────┘ └───────┬──────────┘   │
-│       │              │             │               │               │
-│  ┌────┴────┐ ┌───────┴──────┐ ┌───┴──────┐ ┌──────┴─────────┐    │
-│  │WaveTrend│ │Squeeze Mom.  │ │MACD Sig. │ │RSI+BB / Simple │    │
-│  │Rev/Div  │ │              │ │          │ │                 │    │
-│  └────┬────┘ └──────┬───────┘ └────┬─────┘ └──────┬─────────┘    │
-│       │             │              │               │              │
-│  ┌────┴─────────────┴──────────────┴───────────────┴──────┐       │
-│  │  VWAP · Fibonacci MAI · EMA 9/200 (distance filters)  │       │
-│  └────────────────────────────┬────────────────────────────┘       │
+│  ┌──────────┐ ┌──────────┐ ┌──────────────────┐                    │
+│  │Firestorm │ │SSL Chan. │ │MTF Conditions    │                    │
+│  │(hold N)  │ │(hold N)  │ │(5×SMA crosses)   │                    │
+│  └────┬─────┘ └────┬─────┘ └───────┬──────────┘                    │
+│       │               │              │                              │
+│  ┌────┴────┐ ┌────────┴─────┐ ┌─────┴────┐ ┌──────────────────┐   │
+│  │WaveTrend│ │Squeeze Mom.  │ │MACD Sig. │ │RSI+BB / Simple   │   │
+│  │Rev/Div  │ │              │ │          │ │                  │   │
+│  └────┬────┘ └──────┬───────┘ └────┬─────┘ └──────┬───────────┘   │
+│       │             │              │               │               │
+│  ┌────┴─────────────┴──────────────┴───────────────┴──────┐        │
+│  │  VWAP · EMA 9/200 (distance filters)                  │        │
+│  └────────────────────────────┬────────────────────────────┘        │
 │                               │                                    │
 └───────────────────────────────┼────────────────────────────────────┘
                                 │  buy_signal / sell_signal per indicator
@@ -64,7 +64,7 @@
 
 ## 2. Three-State Indicator Classification
 
-Each of the 13 entry indicators can be set to one of three states:
+Each of the 11 entry indicators can be set to one of three states:
 
 | State | Role | Logic |
 |-------|------|-------|
@@ -76,19 +76,17 @@ Each of the 13 entry indicators can be set to one of three states:
 
 | # | Indicator | Pine Variable (buy) | Pine Variable (sell) |
 |---|-----------|---------------------|----------------------|
-| 1 | Absolute Strength Histogram | `bull_histogram_condition` | `bear_histogram_condition` |
-| 2 | SSL Channel | `ssl_buy_signal` | `ssl_sell_signal` |
-| 3 | RSI + Bollinger | `rsi_compra` | `rsi_venta` |
-| 4 | Squeeze Momentum | `sqz_momentum_compra` | `sqz_momentum_venta` |
-| 5 | MACD Signal | `macd_compra` | `macd_venta` |
-| 6 | MTF Conditions | `mtf_compra` | `mtf_venta` |
-| 7 | Firestorm | `firestorm_buy_signal` | `firestorm_sell_signal` |
-| 8 | WaveTrend Reversal | `wt_rev_compra_final` | `wt_rev_venta_final` |
-| 9 | WaveTrend Divergence | `wtdiv_compra_final` | `wtdiv_venta_final` |
-| 10 | VWAP | `vwap_buy` | `vwap_sell` |
-| 11 | Fibonacci MAI | `fibo_compra` | `fibo_venta` |
-| 12 | RSI Simple | `simple_rsi_signal_buy` | `simple_rsi_signal_sell` |
-| 13 | EMA 9/200 | *(distance filter only — not in combiner)* | — |
+| 1 | SSL Channel | `ssl_buy_signal` | `ssl_sell_signal` |
+| 2 | RSI + Bollinger | `rsi_compra` | `rsi_venta` |
+| 3 | Squeeze Momentum | `sqz_momentum_compra` | `sqz_momentum_venta` |
+| 4 | MACD Signal | `macd_compra` | `macd_venta` |
+| 5 | MTF Conditions | `mtf_compra` | `mtf_venta` |
+| 6 | Firestorm | `firestorm_buy_signal` | `firestorm_sell_signal` |
+| 7 | WaveTrend Reversal | `wt_rev_compra_final` | `wt_rev_venta_final` |
+| 8 | WaveTrend Divergence | `wtdiv_compra_final` | `wtdiv_venta_final` |
+| 9 | VWAP | `vwap_buy` | `vwap_sell` |
+| 10 | RSI Simple | `simple_rsi_signal_buy` | `simple_rsi_signal_sell` |
+| 11 | EMA 9/200 | *(distance filter only — not in combiner)* | — |
 
 > **Note:** SSL Channel has a bug in the Pine Script — the sell optional branch
 > counts both `ssl_sell_signal` AND `ssl_venta` (crossunder). This means SSL

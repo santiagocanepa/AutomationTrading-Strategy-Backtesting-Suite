@@ -11,19 +11,17 @@
 
 1. [Firestorm (SuperTrend Variant)](#1-firestorm-supertrend-variant)
 2. [Firestorm TM (Stop-Loss Band)](#2-firestorm-tm-stop-loss-band)
-3. [Absolute Strength Histogram (ASH)](#3-absolute-strength-histogram-ash)
-4. [SSL Channel](#4-ssl-channel)
-5. [SSL Channel LOW (Trailing)](#5-ssl-channel-low-trailing)
-6. [MTF Conditions (5 × SMA)](#6-mtf-conditions-5--sma)
-7. [MACD Signal](#7-macd-signal)
-8. [WaveTrend — Reversal](#8-wavetrend--reversal)
-9. [WaveTrend — Divergence](#9-wavetrend--divergence)
-10. [RSI + Bollinger Bands](#10-rsi--bollinger-bands)
-11. [RSI Simple](#11-rsi-simple)
-12. [Squeeze Momentum (LazyBear)](#12-squeeze-momentum-lazybear)
-13. [VWAP](#13-vwap)
-14. [Fibonacci MAI](#14-fibonacci-mai)
-15. [EMA 9 / EMA 200 (Auxiliary Filter)](#15-ema-9--ema-200-auxiliary-filter)
+3. [SSL Channel](#3-ssl-channel)
+4. [SSL Channel LOW (Trailing)](#4-ssl-channel-low-trailing)
+5. [MTF Conditions (5 × SMA)](#5-mtf-conditions-5--sma)
+6. [MACD Signal](#6-macd-signal)
+7. [WaveTrend — Reversal](#7-wavetrend--reversal)
+8. [WaveTrend — Divergence](#8-wavetrend--divergence)
+9. [RSI + Bollinger Bands](#9-rsi--bollinger-bands)
+10. [RSI Simple](#10-rsi-simple)
+11. [Squeeze Momentum (LazyBear)](#11-squeeze-momentum-lazybear)
+12. [VWAP](#12-vwap)
+13. [EMA 9 / EMA 200 (Auxiliary Filter)](#13-ema-9--ema-200-auxiliary-filter)
 
 ---
 
@@ -115,87 +113,7 @@ Same as Firestorm — custom NumPy/Numba.
 
 ---
 
-## 3. Absolute Strength Histogram (ASH)
-
-**Role:** Momentum / trend strength indicator. Produces a colored histogram.
-
-### Formula
-
-**Step 1 — Raw bulls/bears** (3 modes):
-
-```
-p1 = SMA(src, 1)     # = src
-p2 = SMA(src[1], 1)  # = src[1]
-
-Mode RSI:
-  bulls = 0.5 * (|p1 - p2| + (p1 - p2))
-  bears = 0.5 * (|p1 - p2| - (p1 - p2))
-
-Mode STOCHASTIC:
-  bulls = p1 - Lowest(p1, len)
-  bears = Highest(p1, len) - p1
-
-Mode ADX:
-  bulls = 0.5 * (|high - high[1]| + (high - high[1]))
-  bears = 0.5 * (|low[1] - low| + (low[1] - low))
-```
-
-**Step 2 — Smoothing:**
-
-```
-avg_bulls = MA(bulls, len, ma_type)
-avg_bears = MA(bears, len, ma_type)
-sm_bulls  = MA(avg_bulls, smooth, ma_type)
-sm_bears  = MA(avg_bears, smooth, ma_type)
-diff      = |sm_bulls - sm_bears|
-```
-
-Where `MA(type)` is one of: SMA, EMA, WMA, SMMA (RMA), HMA, ALMA.
-
-**Step 3 — Color logic:**
-
-```
-bull_trend_color = blue if sm_bulls < sm_bulls[1] else green
-bear_trend_color = orange if sm_bears < sm_bears[1] else red
-
-diff_color =
-  if diff > sm_bulls → bear_trend_color
-  elif diff > sm_bears → bull_trend_color
-  else → gray
-```
-
-**Step 4 — Signal:**
-
-```
-bull_condition = diff_color in {green, lime}
-bear_condition = diff_color in {red, orange}
-```
-
-### Parameters
-
-| Param | Type | Default | Range |
-|-------|------|---------|-------|
-| `ash_len` | int | 9 | 3–50 |
-| `ash_smooth` | int | 3 | 1–10 |
-| `ash_src` | price | close | — |
-| `ash_mode` | enum | "RSI" | RSI / STOCHASTIC / ADX |
-| `ash_ma_type` | enum | "EMA" | ALMA / EMA / WMA / SMA / SMMA / HMA |
-| `ash_alma_off` | float | 0.85 | 0–1 |
-| `ash_alma_sig` | int | 6 | 1–20 |
-
-### Multi-TF
-
-Single timeframe.
-
-### Python Availability
-
-**Custom (NumPy/Numba).** No library has this exact indicator. Each MA variant
-must be implemented. SMMA = RMA = `rma(src, n)` which is
-`(prev * (n-1) + src) / n`. HMA = `WMA(2*WMA(n/2) - WMA(n), sqrt(n))`.
-
----
-
-## 4. SSL Channel
+## 3. SSL Channel
 
 **Role:** Trend signal AND first Take-Profit trigger (via crossunder).
 
@@ -245,7 +163,7 @@ has this exact variant (pandas-ta has `ssl_channel` but with SMA, not EMA).
 
 ---
 
-## 5. SSL Channel LOW (Trailing)
+## 4. SSL Channel LOW (Trailing)
 
 **Role:** Trailing stop trigger after TP1 is hit.
 
@@ -270,7 +188,7 @@ Reuses SSL Channel implementation with different parameters.
 
 ---
 
-## 6. MTF Conditions (5 × SMA)
+## 5. MTF Conditions (5 × SMA)
 
 **Role:** Trend filter — price must be above/below N configurable SMAs on
 independent timeframes.
@@ -321,7 +239,7 @@ condition = OR(close > mtf_i  for any enabled i)
 
 ---
 
-## 7. MACD Signal
+## 6. MACD Signal
 
 **Role:** Momentum confirmation via MACD line / signal line crossover.
 
@@ -359,7 +277,7 @@ Uses `hold_bars` pattern (default 3).
 
 ---
 
-## 8. WaveTrend — Reversal
+## 7. WaveTrend — Reversal
 
 **Role:** Detect reversals when WaveTrend crosses in oversold/overbought zones.
 
@@ -402,7 +320,7 @@ specific oscillator.
 
 ---
 
-## 9. WaveTrend — Divergence
+## 8. WaveTrend — Divergence
 
 **Role:** Detect bullish/bearish divergences of WaveTrend against price.
 
@@ -450,7 +368,7 @@ Most complex indicator to reimplement due to `valuewhen` semantics.
 
 ---
 
-## 10. RSI + Bollinger Bands
+## 9. RSI + Bollinger Bands
 
 **Role:** Mean-reversion signal — RSI crosses above/below a dispersion band.
 
@@ -488,7 +406,7 @@ Calculated on 3 independent TFs (T1, T2, T3). Signal is OR across enabled TFs.
 
 ---
 
-## 11. RSI Simple
+## 10. RSI Simple
 
 **Role:** Basic oversold/overbought filter.
 
@@ -518,7 +436,7 @@ Single timeframe (chart TF).
 
 ---
 
-## 12. Squeeze Momentum (LazyBear)
+## 11. Squeeze Momentum (LazyBear)
 
 **Role:** Momentum direction + squeeze detection (volatility compression).
 
@@ -576,7 +494,7 @@ or `scipy.stats.linregress`. No library has this exact combination.
 
 ---
 
-## 13. VWAP
+## 12. VWAP
 
 **Role:** Volume-weighted price level filter.
 
@@ -601,47 +519,7 @@ sell = close < vwap
 
 ---
 
-## 14. Fibonacci MAI
-
-**Role:** Crossover of Fibonacci-length moving averages.
-
-### Formula
-
-```
-src = ohlc4
-
-maLong  = EMA(src, 34)    # or SMA if e_maLong = false
-maCross = EMA(src, 144)   # or SMA
-maShort = EMA(src, 55)    # or SMA
-maCrossU = EMA(src, 144)  # or SMA (for crossunder, independent toggle)
-
-buy  = crossover(maLong, maCross)     # 34 crosses above 144
-sell = crossunder(maShort, maCrossU)  # 55 crosses below 144
-```
-
-Calculated on 3 TFs. Signal is OR across enabled TFs.
-
-### Parameters
-
-| Param | Type | Default | Range |
-|-------|------|---------|-------|
-| `lenLong` | int | 34 | fixed |
-| `lenCross` | int | 144 | fixed |
-| `lenShort` | int | 55 | fixed |
-| `lenCrossU` | int | 144 | fixed |
-| `e_maLong` | bool | true | EMA vs SMA |
-| `e_maCross` | bool | true | EMA vs SMA |
-| `e_maShort` | bool | true | EMA vs SMA |
-| `e_maCrossU` | bool | false | EMA vs SMA |
-| `fibo_t[1-3]_selection` | TF | "1 sup", "2 sup", "grafico" | — |
-
-### Python Availability
-
-**TA-Lib** `EMA()` / `SMA()` + crossover logic. Simple.
-
----
-
-## 15. EMA 9 / EMA 200 (Auxiliary Filter)
+## 13. EMA 9 / EMA 200 (Auxiliary Filter)
 
 **Role:** Structural filter (not a signal indicator). Used in distance
 calculations for the RM engine.
@@ -681,7 +559,7 @@ entry indicators during Sprint 2.
 | Priority | Indicator | Approach | Effort |
 |----------|-----------|----------|--------|
 | 🟢 Trivial | RSI Simple, MACD, VWAP, EMA 9/200 | TA-Lib wrapper | < 1h each |
-| 🟡 Medium | SSL Channel, SSL LOW, MTF Conditions, RSI+BB, Fibo MAI | TA-Lib + custom logic | 2–4h each |
-| 🔴 Complex | ASH, Firestorm, Firestorm TM, Squeeze Momentum, WaveTrend Rev, WaveTrend Div | Full custom NumPy/Numba | 4–8h each |
+| 🟡 Medium | SSL Channel, SSL LOW, MTF Conditions, RSI+BB | TA-Lib + custom logic | 2–4h each |
+| 🔴 Complex | Firestorm, Firestorm TM, Squeeze Momentum, WaveTrend Rev, WaveTrend Div | Full custom NumPy/Numba | 4–8h each |
 
-**Total estimated implementation effort (Sprint 2):** ~60–80 hours for all 15.
+**Total estimated implementation effort (Sprint 2):** ~50–65 hours for all 13.

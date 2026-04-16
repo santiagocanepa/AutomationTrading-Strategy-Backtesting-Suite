@@ -19,7 +19,7 @@
 | `stop__atr_multiple` | `stop.atr_multiple` | float | [1.0, 5.0] step 0.5 | 2.0 | **active** | In DEFAULT_RISK_SEARCH_SPACE. Regression-covered. |
 | `sizing__risk_pct` | `sizing.risk_pct` | float | [0.5, 3.0] step 0.25 | 1.0 | **active** | In DEFAULT_RISK_SEARCH_SPACE. Regression-covered. |
 | `stop__fixed_pct` | `stop.fixed_pct` | float | [0.01, 50.0] | 2.0 | partial | Fallback when ATR=0 (warmup). Not in search space. |
-| `sizing__model` | `sizing.model` | str | fixed_fractional | fixed_fractional | partial | Only 1 model implemented (fixed_fractional). |
+| `sizing__model` | `sizing.model` | str | fixed_fractional, atr, kelly, optimal_f | fixed_fractional | partial | 4 models implemented: fixed_fractional, atr, kelly, optimal_f. |
 | `sizing__kelly_fraction` | `sizing.kelly_fraction` | float | [0.01, 1.0] | 0.5 | experimental | Kelly requires strategy_stats — not wired yet. |
 | `sizing__max_leverage` | `sizing.max_leverage` | float | [1.0, 125.0] | 1.0 | experimental | No leverage logic in runner beyond sizer. |
 | `trailing__model` | `trailing.model` | str | atr, chandelier, sar, etc. | atr | partial | 6 policies implemented. Only "atr" tested in integration. |

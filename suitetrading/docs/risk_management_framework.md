@@ -12,7 +12,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Indicator Layer                          │
-│  Firestorm · SSL Channel · WaveTrend · VWAP · Fibo MAI … │
+│  Firestorm · SSL Channel · WaveTrend · VWAP · Squeeze …  │
 │  Each indicator: compute(df) → pd.Series[bool]              │
 └───────────────┬─────────────────────────────────────────────┘
                 │ entry_signal, exit_signal, trailing_signal

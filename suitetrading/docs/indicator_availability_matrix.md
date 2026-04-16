@@ -20,19 +20,17 @@
 | # | Indicator | TA-Lib | pandas-ta | Custom | Decision | Notes |
 |---|-----------|--------|-----------|--------|----------|-------|
 | 1 | **Firestorm** | — | — | 🔧 | **Custom (Numba)** | Supertrend variant with `ohlc4` src, ratchet logic, hold-bars. No library matches the exact variant. |
-| 2 | **ASH (Absolute Strength Histogram)** | — | `pta.aberration` (no) | 🔧 | **Custom** | 3 modes (RSI/Stochastic/ADX) × 6 MA types (ALMA/EMA/WMA/SMA/SMMA/HMA). No library implements this combo. |
-| 3 | **SSL Channel** | — | `pta.ssl` ⚠️ | ⚠️ | **Custom** | pandas-ta `ssl()` exists but the SuiteTrading variant uses EMA(high/low), Pine-style Hlv flips, and hold-bars. Reimplementation is required for exact parity. |
-| 4 | **SSL Channel LOW** | — | — | 🔧 | **Custom (Numba-backed)** | Same EMA/Hlv core as SSL Channel, but used as trailing trigger on an independent timeframe. |
-| 5 | **MTF Conditions** | ✅ `ta.SMA` | ✅ `pta.sma` | — | **TA-Lib** | 5 × SMA(close, 50) on different TFs. SMA is trivially available. Custom part: multi-TF resampling + "all above/below" logic. |
-| 6 | **MACD Signal** | ✅ `ta.MACD` | ✅ `pta.macd` | — | **TA-Lib** | Standard MACD(12,26,9). Signal = histogram crossover. |
-| 7 | **WaveTrend Reversal** | — | — | 🔧 | **Custom (Numba)** | WT oscillator (EMA of EMA of hlc3) + reversal detection with fractal pivots. No library. |
-| 8 | **WaveTrend Divergence** | — | — | 🔧 | **Custom (Numba)** | Same WT oscillator + divergence detection (price vs WT highs/lows). |
-| 9 | **RSI + Bollinger Bands** | ✅ `ta.RSI` + `ta.BBANDS` | ✅ | — | **TA-Lib** | RSI(14) + BB(RSI, 50, 1.0). Buy = RSI crosses above lower BB. |
-| 10 | **RSI Simple** | ✅ `ta.RSI` | ✅ | — | **TA-Lib** | RSI(14) > 50 buy, < 50 sell. Trivial. |
-| 11 | **Squeeze Momentum** | — | `pta.squeeze` ⚠️ | ⚠️ | **Custom** | LazyBear version: BB(20,2) vs KC(20,1.5), momentum = linreg(close-avg(highest,lowest,SMA),20). pandas-ta's squeeze is close but uses different momentum formula. |
-| 12 | **VWAP** | — | ✅ `pta.vwap` | — | **pandas-ta** | Standard VWAP. Signal: close > vwap = buy. |
-| 13 | **Fibonacci MAI** | — | — | 🔧 | **Custom** | EMA of EMAs at Fibonacci periods [1,2,3,5,8,13,21]. No library. |
-| 14 | **EMA 9/200** | ✅ `ta.EMA` | ✅ | — | **TA-Lib** | Distance filter only. |
+| 2 | **SSL Channel** | — | `pta.ssl` ⚠️ | ⚠️ | **Custom** | pandas-ta `ssl()` exists but the SuiteTrading variant uses EMA(high/low), Pine-style Hlv flips, and hold-bars. Reimplementation is required for exact parity. |
+| 3 | **SSL Channel LOW** | — | — | 🔧 | **Custom (Numba-backed)** | Same EMA/Hlv core as SSL Channel, but used as trailing trigger on an independent timeframe. |
+| 4 | **MTF Conditions** | ✅ `ta.SMA` | ✅ `pta.sma` | — | **TA-Lib** | 5 × SMA(close, 50) on different TFs. SMA is trivially available. Custom part: multi-TF resampling + "all above/below" logic. |
+| 5 | **MACD Signal** | ✅ `ta.MACD` | ✅ `pta.macd` | — | **TA-Lib** | Standard MACD(12,26,9). Signal = histogram crossover. |
+| 6 | **WaveTrend Reversal** | — | — | 🔧 | **Custom (Numba)** | WT oscillator (EMA of EMA of hlc3) + reversal detection with fractal pivots. No library. |
+| 7 | **WaveTrend Divergence** | — | — | 🔧 | **Custom (Numba)** | Same WT oscillator + divergence detection (price vs WT highs/lows). |
+| 8 | **RSI + Bollinger Bands** | ✅ `ta.RSI` + `ta.BBANDS` | ✅ | — | **TA-Lib** | RSI(14) + BB(RSI, 50, 1.0). Buy = RSI crosses above lower BB. |
+| 9 | **RSI Simple** | ✅ `ta.RSI` | ✅ | — | **TA-Lib** | RSI(14) > 50 buy, < 50 sell. Trivial. |
+| 10 | **Squeeze Momentum** | — | `pta.squeeze` ⚠️ | ⚠️ | **Custom** | LazyBear version: BB(20,2) vs KC(20,1.5), momentum = linreg(close-avg(highest,lowest,SMA),20). pandas-ta's squeeze is close but uses different momentum formula. |
+| 11 | **VWAP** | — | ✅ `pta.vwap` | — | **pandas-ta** | Standard VWAP. Signal: close > vwap = buy. |
+| 12 | **EMA 9/200** | ✅ `ta.EMA` | ✅ | — | **TA-Lib** | Distance filter only. |
 
 ---
 
@@ -51,7 +49,7 @@
 | **TA-Lib** (drop-in) | 5 | MTF Conditions (SMA), MACD Signal, RSI+BB, RSI Simple, EMA 9/200 |
 | **pandas-ta** (drop-in) | 1 | VWAP |
 | **Custom (Numba-backed)** | 6 | Firestorm, Firestorm TM, SSL Channel, SSL Channel LOW, WaveTrend Reversal, WaveTrend Divergence |
-| **Custom (pure NumPy)** | 3 | ASH, Squeeze Momentum, Fibonacci MAI |
+| **Custom (pure NumPy)** | 1 | Squeeze Momentum |
 
 ---
 

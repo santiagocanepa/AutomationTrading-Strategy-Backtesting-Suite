@@ -76,8 +76,11 @@ def _random_value(
 
 
 MAX_EXCLUYENTE = 2
-STATES = ["Excluyente", "Opcional", "Desactivado"]
 TIMEFRAMES = ["grafico", "1_superior", "2_superiores"]
+
+# Only these 4 indicators work as EXCL gates (>9% viable rate in 1.74M trial analysis).
+# Others produce <2% viable or 0% (squeeze, wavetrend). See structural_findings.md.
+EXCL_CANDIDATES = ["adx_filter", "obv", "firestorm", "ma_crossover"]
 
 
 def generate_random_params(
@@ -87,19 +90,42 @@ def generate_random_params(
     step_factor: int,
     rng: np.random.Generator,
 ) -> dict[str, object]:
-    """Generate one complete random parameter set."""
+    """Generate one complete random parameter set.
+
+    Sampling strategy (rebalanced 2026-04-16):
+    1. Sample n_excl ∈ {0, 1, 2} with equal probability (~33% each)
+    2. If n_excl > 0, choose which indicators from EXCL_CANDIDATES only
+    3. Remaining entry indicators get OPC or DESACT (50/50)
+    4. Risk params sampled uniformly (no step_factor)
+
+    This fixes the old distribution where 92.5% of trials had 2 EXCL
+    (the least productive region at ~0.7% viable rate).
+    """
     flat: dict[str, object] = {}
     entry_set = set(entry_indicators)
 
-    # ── Indicator params ─────────────────────────────────────────
+    # ── Step 1: decide EXCL count and which indicators ───────────
+    n_excl = int(rng.choice([0, 1, 2]))
+    excl_eligible = [ind for ind in entry_indicators if ind in EXCL_CANDIDATES]
+
+    if n_excl > 0 and excl_eligible:
+        n_excl = min(n_excl, len(excl_eligible))
+        excl_chosen = set(rng.choice(excl_eligible, n_excl, replace=False))
+    else:
+        excl_chosen = set()
+        n_excl = 0
+
+    # ── Step 2: assign states + TF + indicator params ────────────
     states_assigned: dict[str, str] = {}
     for ind_name in indicator_names:
         indicator = get_indicator(ind_name)
         schema = indicator.params_schema()
 
-        # Dynamic state/TF for entry indicators
         if ind_name in entry_set:
-            state = str(rng.choice(STATES))
+            if ind_name in excl_chosen:
+                state = "Excluyente"
+            else:
+                state = str(rng.choice(["Opcional", "Desactivado"]))
             states_assigned[ind_name] = state
             flat[f"{ind_name}____state"] = state
             flat[f"{ind_name}____timeframe"] = str(rng.choice(TIMEFRAMES))
@@ -110,14 +136,7 @@ def generate_random_params(
                 param_schema, step_factor, rng,
             )
 
-    # ── Enforce MAX_EXCLUYENTE ───────────────────────────────────
-    excl_names = [n for n, s in states_assigned.items() if s == "Excluyente"]
-    if len(excl_names) > MAX_EXCLUYENTE:
-        for name in rng.choice(excl_names, len(excl_names) - MAX_EXCLUYENTE, replace=False):
-            flat[f"{name}____state"] = "Opcional"
-            states_assigned[name] = "Opcional"
-
-    # ── Smart num_optional_required ──────────────────────────────
+    # ── Step 3: smart num_optional_required (unchanged logic) ────
     excl_count = sum(1 for s in states_assigned.values() if s == "Excluyente")
     opc_count = sum(1 for s in states_assigned.values() if s == "Opcional")
     min_req, max_req = _smart_optional_range(excl_count, opc_count)
@@ -126,7 +145,7 @@ def generate_random_params(
     else:
         flat["num_optional_required"] = 1
 
-    # ── Risk params (NO step_factor — already at designed granularity)
+    # ── Step 4: risk params (NO step_factor — designed granularity)
     for key, schema in risk_space.items():
         flat[key] = _random_value(schema, 1, rng)
 

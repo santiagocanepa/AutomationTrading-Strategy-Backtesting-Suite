@@ -28,7 +28,7 @@ pip install yfinance fredapi
 ## Verify
 
 ```bash
-# Tests (should be 1467+ passed)
+# Tests (1,468 passed in ~25 s)
 pytest -x -q
 
 # Registry check
@@ -82,9 +82,9 @@ print(df[['sharpe','max_drawdown_pct','total_trades']].describe())
 
 ## Hardware
 
-- **M4 Pro 48GB** — max 4 parallel v9 processes
-- 300K trials/study ≈ 13h per process at 6.5 bt/sec sustained
-- 20 studies ÷ 4 parallel = ~65h total for full v9
+- **M4 Pro 48GB** — empirically saturates at ~8 parallel `run_random_v9.py` processes (I/O-bound on 1-minute Parquet reads)
+- ~5–10 K trials/hour/study (TF-dependent: 4h faster, 15m slower due to bar-count differential)
+- Full multi-TF discovery (15m + 1h + 4h × 20 studies × 100 K trials) writes ~7 GB of Parquet (zstd-compressed)
 
 ## Known issues
 

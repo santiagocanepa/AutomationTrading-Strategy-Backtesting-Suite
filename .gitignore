@@ -45,6 +45,17 @@ credentials.*
 secrets.*
 config.local.*
 
-# Research notes (personal)
+# Research notes (personal — contain portfolio-specific configs/results)
 RESEARCH_PLAN.md
 RISK_MANAGEMENT_RESEARCH.md
+suitetrading/ANALYSIS_RESULTS.md
+suitetrading/ANALYSIS_PLAN.md
+suitetrading/analysis_work/
+
+# Logs
+*.log
+
+# Cursor / Claude / agent state
+.claude/
+.cursor/
+.vscode/settings.json

@@ -1,59 +1,69 @@
-# Research History — v1 to current
+# Research history — v1 to current
 
-## Discovery runs
+The pipeline has gone through nine major iterations. Each one was a methodology lesson; the early ones in particular informed the non-negotiable rules in [`methodology.md`](methodology.md).
 
-| Run | Date | Approach | Trials | Result | Status |
-|-----|------|----------|--------|--------|--------|
-| v1 | Mar 2026 | TPE single-obj, penalty -10 | 80K | 0 finalists | Penalty destroys surface |
-| v2 | Mar 2026 | TPE + MAX_EXCL=3 | 80K | 27 finalists | Baseline reference |
-| v3 | Mar 2026 | NSGA-II, 9 indicators | 400K | 139 finalists | Incomplete indicator set |
-| **v4** | **Mar 2026** | **NSGA-II, 11 ind, step=4** | **200K** | **31 finalists, PBO 0.014-0.27** | **Best optimizer result** |
-| v5 | Mar 2026 | NSGA-II, 7 ind, step=1 | 400K | 11 finalists | Pruning hurts PBO |
-| v6 | Apr 2026 | Random, no WFO | 1.27M | 1,333 viables (0.10%) | Direction bug (fixed) |
-| v7 | Apr 2026 | NSGA-II (deviation) | 300K | 291 finalists | Unauthorized methodology change |
-| v8 | Apr 2026 | NSGA-II (deviation) | 400K | 87 finalists | Same deviation |
-| **v9** | **Apr 14** | **Random, no Optuna, Parquet** | **1.74M** | **Paused (MDD bug)** | **Current Phase 1** |
+## Discovery iterations
 
-## Key learnings
+| Run | Period | Approach | Lesson |
+|-----|--------|----------|--------|
+| v1 | Mar 2026 | TPE single-obj, hard penalty | Hard penalties destroy the gradient surface — optimizer collapses |
+| v2 | Mar 2026 | TPE + relaxed exclusivity | Baseline reference for further iterations |
+| v3 | Mar 2026 | NSGA-II, 9 indicators | Indicator set incomplete; missed structural patterns |
+| v4 | Mar 2026 | NSGA-II, 11 indicators | Best optimizer-driven result; PBO 0.014–0.27 |
+| v5 | Mar 2026 | NSGA-II, 7 indicators (pruned) | Pruning to 7 hurt PBO — fewer candidates not always better |
+| v6 | Apr 2026 | Random, no WFO | Concept proof: random > optimizer for ~10¹⁶ space exploration |
+| v7 / v8 | Apr 2026 | NSGA-II (unauthorized methodology change) | Regression caught and reverted; rule 7 in methodology was added |
+| v9 | Apr 2026 → Apr 2026 | Random, no Optuna, multi-TF | Current. Phase 1 complete across 15m / 1h / 4h |
 
-- **v4 is the reference standard** — 31 finalists with PBO 0.014-0.271, artifacts in `discovery_rich_v4/`
-- **Random > optimizer for exploration** in ~10^16 space (v6 proved concept, v9 executes at scale)
-- **MACD destructive** across v4, v6, v7 (−8 to −23pp Sharpe contribution)
-- **firestorm + ssl_channel** most consistent contributors across all runs
-- **num_optional_required = 2** optimal (v6, v7 confirmed)
-- **Risk collapses to minimums** in v7/v8 → v9 widened range below those minimums
-- **step_factor=4** prevents indicator param overfit (v5 vs v4 comparison)
+## v9 — current pipeline
 
-## Downstream pipeline (Mar 13-29 2026)
+The v9 cycle executed Phase 1 on three timeframes:
 
-Built in parallel as the portfolio construction layer. Commits:
+- **1h** — 2 M trials across 20 studies (10 assets × 2 directions)
+- **4h** — 2 M trials, same study layout
+- **15m** — 2 M trials, same study layout
 
-| Commit | Change |
-|--------|--------|
-| `d7c9040` | Phase 3 infrastructure: new indicators, FTM stops, 6 symbols |
-| `4fb99b8` | Realistic slippage model |
-| `e1d47b1` | Portfolio walk-forward validation script |
-| `9638fce` | Slippage into pool builder + portfolio defaults |
-| `a4c232f` | Stability filter + walk-forward tuning |
-| `bd420b9` | Pruned 10-strategy portfolio via leave-one-out |
-| `46f879e` | Risk defaults from 764K-trial feature importance |
-| `5359c0e` | Narrow indicator search spaces → per-symbol rich_* archetypes |
-| `7fc7c3e` | Expand to 10 crypto assets |
-| `c6bbb39` | Stock market support (annualization, slippage, Alpaca) |
-| `6e3c0ce` | Cross-asset portfolio: crypto + stocks via Alpaca |
+Phase 2 structural analysis on the combined 6 M trial corpus identified the HQ pool: a small fraction of the random space that consistently produces viable Sharpe under the validation gates. The structural findings (which indicator states / TFs / parameter ranges concentrate viable trials) are documented in the modular module docs.
 
-## Current state
+Phase 3 Optuna refinement was applied per archetype on the HQ pool, producing per-archetype finalists that pass the four anti-overfit gates (PBO, DSR, SPA, permutation null).
 
-- **v9 Phase 1:** paused. Bug MDD fixed in runner (`bug_history.md`). Relaunch pending user decision (A/B/C in `v9_current_state.md`).
-- **Downstream:** operational. `artifacts/portfolio_rich/` (25 strategies, Mar 29) built from `discovery_rich_v4/` as interim input.
-- **Next:** relaunch v9 → Phase 2 analysis → Phase 3 Optuna validation → rebuild portfolio with v9 finalists.
+Phase 4 portfolio construction was run cross-TF and cross-archetype, with a final cross-validation suite that included equity-curve dedup, slippage stress, regime stress, bootstrap CI, Monte Carlo, and borrow haircut estimation. The validation framework template is documented in [`validation_framework.md`](validation_framework.md).
 
-## Structural findings (cross-run)
+## Key learnings (cross-iteration)
 
-| Pattern | Source | Confidence |
-|---------|--------|------------|
-| EXCL toxic for most indicators (~5% viable vs 33% baseline) | v6 | High |
-| obv, adx_filter, ma_crossover, firestorm tolerate EXCL | v6 | High |
-| squeeze, rsi, bollinger, macd NEVER as EXCL | v6, v7 | High |
-| Long bias for US equities (10x more viables than short) | v9 SPY/QQQ | Medium |
-| ~30% zero-trade rate suggests over-restrictive random space | v9 SPY/QQQ | Medium |
+- **Random > optimizer for exploration in high-cardinality spaces.** v6 proved the concept; v9 executes at scale.
+- **MACD is structurally destructive in our archetype set.** Across v4 / v6 / v7 it consistently subtracted Sharpe (−8 to −23 percentage points).
+- **Firestorm and SSL Channel** are the most consistent positive contributors across all runs.
+- **`num_optional_required = 2` is optimal** under the excluyente / opcional / desactivado classification (confirmed in v6 and v7).
+- **Pruning indicator sets aggressively hurts PBO** — v5 vs v4 showed that going from 11 to 7 indicators degraded the OOS-vs-IS ratio.
+- **`step_factor = 4` for indicators, `= 1` for risk** — regularizes continuous indicator parameters while preserving the risk parameter granularity that already encodes design choices.
+- **Risk space dominance** — moving from 3 to 11 risk keys (Phase 3 vs Phase 1) consistently raised the Sharpe ceiling more than expanding the indicator set.
+
+## Methodology lessons that became rules
+
+- v1 → **rule 6**: Anti-overfit metrics must be gates, not advisory metrics.
+- v3 / v5 → **rule 5**: Holdout discipline is non-negotiable.
+- v6 → **rule 1**: Phase 1 is random, not Optuna.
+- v7 / v8 → **rule 7**: No methodology change without explicit owner approval.
+- A 13-hour MDD-bug compute loss → **rule 4**: Smoke test before any > 1 h run.
+
+## Engine-level milestones
+
+| Period | Change | Notes |
+|--------|--------|-------|
+| Mar 2026 | Slippage model formalized as per-symbol-per-TF lookup | `backtesting/slippage.py` |
+| Mar 2026 | Walk-forward optimization wired into Phase 3 | `optimization/walk_forward.py` |
+| Mar 2026 | Pruned 10-strategy reference portfolio via leave-one-out | First end-to-end pipeline pass |
+| Mar 2026 | Cross-asset support: crypto via Binance + US equities via Alpaca | Architecture generalized beyond crypto |
+| Apr 2026 | Risk parameter contracts pinned via Pydantic | Eliminated a class of misconfiguration bugs |
+| Apr 2026 | Per-asset rich archetypes (`rich_spy`, `rich_aapl`, …) | 764 K-trial feature importance informed subsets |
+| Apr 2026 | v9 random exhaustive runner + Parquet pipeline | Replaced Optuna for Phase 1 |
+| Apr 2026 | Multi-TF discovery (15m + 1h + 4h) | Three parallel Phase 1 datasets |
+| Apr 2026 | Phase 4b/4c cross-validation suite formalized | Eleven empirical tests as reusable template |
+
+## Where to look next
+
+- [`methodology.md`](methodology.md) — current rules and validation gates
+- [`validation_framework.md`](validation_framework.md) — the cross-validation harness
+- [`architecture.md`](architecture.md) — module map and data flow
+- [`HANDOFF.md`](../HANDOFF.md) — operational state for the next session

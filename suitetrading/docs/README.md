@@ -5,8 +5,10 @@
 | Doc | Content |
 |-----|---------|
 | [Architecture](architecture.md) | Pipeline diagram, module dependencies, directory structure |
-| [Methodology](methodology.md) | Iterative pipeline (v9 → Optuna → portfolio), rules, risk spaces |
-| [History](history.md) | Timeline v1-v9, downstream pipeline, structural findings |
+| [Methodology](methodology.md) | The 5-phase pipeline, non-negotiable rules, risk search spaces, validation gates |
+| [Validation framework](validation_framework.md) | TIER A/B/C cross-validation suite (replication, sensitivity, structural diagnostics) |
+| [Cookbook](cookbook.md) | Operational recipes — discovery, monitoring, validation, portfolio, paper |
+| [History](history.md) | Timeline v1-v9, methodology lessons, engine-level milestones |
 | [Setup](setup.md) | Installation, env vars, first run, hardware |
 
 ## Modules
@@ -38,4 +40,5 @@
 - **Excluyente / Opcional / Desactivado** — three-state indicator classification (see [signal flow](modules/indicators/signal_flow.md))
 - **rich_stock** — primary archetype with 11 entry indicators (see [methodology](methodology.md))
 - **PBO** — Probability of Backtest Overfitting via CSCV (see [optimization](modules/optimization/README.md))
-- **v9** — current Phase 1 exploration (random exhaustive, no Optuna)
+- **Effective N** — eigenvalue-based participation ratio of the equity-curve correlation matrix (see [validation framework](validation_framework.md))
+- **v9** — Phase 1 random exhaustive discovery, executed across 15m / 1h / 4h timeframes

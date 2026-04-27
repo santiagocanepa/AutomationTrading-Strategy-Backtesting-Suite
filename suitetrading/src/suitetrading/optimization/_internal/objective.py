@@ -266,6 +266,20 @@ def filter_search_space(
     return {k: v for k, v in space.items() if maturity.get(k, "experimental") in allowed}
 
 
+def _insert_nested(target: dict[str, Any], flat_key: str, value: Any) -> None:
+    """Insert a value into a nested dict structure using a flat "__" key.
+
+    Example: ``flat_key="stop__atr_multiple"`` → ``target["stop"]["atr_multiple"] = value``.
+    Required because ``build_risk_config(**overrides)`` expects nested dicts
+    (e.g. ``{"stop": {"atr_multiple": 2.0}}``), not flat keys.
+    """
+    parts = flat_key.split("__")
+    cursor = target
+    for part in parts[:-1]:
+        cursor = cursor.setdefault(part, {})
+    cursor[parts[-1]] = value
+
+
 def _suggest_risk_overrides(
     trial: optuna.Trial,
     risk_search_space: dict[str, dict[str, Any]],
@@ -275,11 +289,7 @@ def _suggest_risk_overrides(
     overrides: dict[str, Any] = {}
     for flat_key, schema in risk_search_space.items():
         value = _suggest_param(trial, flat_key, schema, step_factor=step_factor)
-        parts = flat_key.split("__")
-        target = overrides
-        for part in parts[:-1]:
-            target = target.setdefault(part, {})
-        target[parts[-1]] = value
+        _insert_nested(overrides, flat_key, value)
     return overrides
 
 
@@ -752,7 +762,10 @@ class BacktestObjective:
             if len(parts) == 2 and parts[0] in indicator_set:
                 indicator_params.setdefault(parts[0], {})[parts[1]] = value
             else:
-                risk_overrides[key] = value
+                # Risk overrides must be nested (e.g. "stop__atr_multiple" →
+                # {"stop": {"atr_multiple": value}}) because build_risk_config
+                # expects keyword args matching archetype dataclass fields.
+                _insert_nested(risk_overrides, key, value)
 
         if self._dynamic_states:
             indicator_params["__num_optional_required"] = num_optional_required

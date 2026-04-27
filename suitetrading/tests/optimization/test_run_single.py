@@ -57,8 +57,10 @@ class TestSplitParams:
         assert "ssl_channel" in ind_params
         assert ind_params["ssl_channel"]["length"] == 12
         assert ind_params["ssl_channel"]["hold_bars"] == 4
-        assert risk["stop__atr_multiple"] == 2.5
-        assert risk["sizing__risk_pct"] == 1.0
+        # Risk keys MUST be nested for build_risk_config(**risk) to work.
+        # Previous buggy behaviour stored flat keys, which build_risk_config
+        # silently ignored via **kwargs absorption.
+        assert risk == {"stop": {"atr_multiple": 2.5}, "sizing": {"risk_pct": 1.0}}
 
     def test_unknown_prefix_goes_to_risk(self, tiny_dataset: BacktestDataset) -> None:
         from suitetrading.optimization._internal.objective import BacktestObjective
@@ -72,8 +74,32 @@ class TestSplitParams:
         flat = {"ssl_channel__length": 12, "foo__bar": 99}
         ind, risk = obj._split_params(flat)
 
-        assert "foo__bar" in risk
+        # Nested, not flat
+        assert risk == {"foo": {"bar": 99}}
         assert "ssl_channel" in ind
+
+    def test_risk_override_actually_applied_regression(
+        self, tiny_dataset: BacktestDataset,
+    ) -> None:
+        """Regression: changing stop__atr_multiple via run_single() must
+        change the resulting RiskConfig. Historical bug: flat key was
+        ignored, engine used default stop=10.0 regardless of override.
+        """
+        from suitetrading.optimization._internal.objective import BacktestObjective
+
+        obj = BacktestObjective(
+            dataset=tiny_dataset,
+            indicator_names=["ssl_channel"],
+            archetype="rich_stock",
+            mode="fsm",
+        )
+        _, risk_a = obj._split_params({"stop__atr_multiple": 0.5})
+        _, risk_b = obj._split_params({"stop__atr_multiple": 4.0})
+        cfg_a = obj.build_risk_config(risk_a)
+        cfg_b = obj.build_risk_config(risk_b)
+        assert cfg_a.stop.atr_multiple == 0.5
+        assert cfg_b.stop.atr_multiple == 4.0
+        assert cfg_a.stop.atr_multiple != cfg_b.stop.atr_multiple
 
 
 class TestRunSingle:
